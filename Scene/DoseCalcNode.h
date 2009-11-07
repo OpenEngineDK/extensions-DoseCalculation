@@ -11,12 +11,17 @@
 #define _HEIGHTFIELD_NODE_H_
 
 #include <Scene/ISceneNode.h>
+#include <Resources/ITexture3DResource.h>
+
+using namespace OpenEngine::Resources;
 
 namespace OpenEngine {
     namespace Scene {
-
+        
         class DoseCalcNode : public ISceneNode {
             OE_SCENE_NODE(DoseCalcNode, ISceneNode)
+        
+            ITexture3DResourcePtr image;
 
         public:
             DoseCalcNode();
