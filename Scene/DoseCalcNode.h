@@ -11,23 +11,30 @@
 #define _HEIGHTFIELD_NODE_H_
 
 #include <Scene/ISceneNode.h>
+#include <Core/IListener.h>
+#include <Renderers/IRenderer.h>
 #include <Resources/ITexture3DResource.h>
 
+using namespace OpenEngine::Core;
 using namespace OpenEngine::Resources;
+using namespace OpenEngine::Renderers;
 
 namespace OpenEngine {
     namespace Scene {
         
-        class DoseCalcNode : public ISceneNode {
+        class DoseCalcNode : public ISceneNode, public IListener<RenderingEventArg>  {
             OE_SCENE_NODE(DoseCalcNode, ISceneNode)
         
             ITexture3DResourcePtr image;
 
         public:
             DoseCalcNode();
+            DoseCalcNode(ITexture3DResourcePtr i);
             ~DoseCalcNode();
 
             void VisitSubNodes(ISceneNodeVisitor& visitor);
+
+            void Handle(RenderingEventArg arg);
 
             // **** Get/Set ****
             

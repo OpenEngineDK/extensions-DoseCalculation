@@ -8,12 +8,19 @@
 //--------------------------------------------------------------------
 
 #include <Scene/DoseCalcNode.h>
+#include <Meta/OpenGL.h>
 
 namespace OpenEngine {
     namespace Scene {
 
-        DoseCalcNode::DoseCalcNode(){
+        DoseCalcNode::DoseCalcNode()
+            : image(ITexture3DResourcePtr()){
 
+        }
+
+        DoseCalcNode::DoseCalcNode(ITexture3DResourcePtr i)
+            : image(i){
+            
         }
 
         DoseCalcNode::~DoseCalcNode(){
@@ -26,6 +33,27 @@ namespace OpenEngine {
                 (*itr)->Accept(visitor);
             }
         }
+        void DoseCalcNode::Handle(RenderingEventArg arg){
+            if (image != NULL){
+                // Load the texture
+                image->Load();
 
+                GLuint texId;
+                glGenTextures(1, &texId);
+                glBindTexture(GL_TEXTURE_3D, texId);
+                glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S, GL_CLAMP);
+                glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T, GL_CLAMP);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+                glTexImage3D(GL_TEXTURE_3D, 0, GL_RGB, 
+                             image->GetWidth(), image->GetHeight(), image->GetDepth(),
+                             0, GL_RGBA, GL_UNSIGNED_BYTE, image->GetData());
+
+                image->SetID(texId);
+
+                glBindTexture(GL_TEXTURE_3D, 0);
+            }
+            
+        }
     }
 }
