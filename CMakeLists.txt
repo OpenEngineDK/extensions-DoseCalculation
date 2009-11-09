@@ -1,6 +1,7 @@
 SET ( EXTENSION_NAME "Extensions_DoseCalculation")
 # Create the extension library
 ADD_LIBRARY( ${EXTENSION_NAME}
+  Renderers/OpenGL/DoseCalcRenderingView.cpp
   Scene/DoseCalcNode.cpp
 )
 

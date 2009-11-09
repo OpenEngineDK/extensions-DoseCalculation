@@ -28,6 +28,10 @@ namespace OpenEngine {
             ~DoseCalcNode();
 
             void VisitSubNodes(ISceneNodeVisitor& visitor);
+
+            // **** Get/Set ****
+            
+            ITexture3DResourcePtr GetImage() const { return image; }
         };
 
     }
