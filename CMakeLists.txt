@@ -3,6 +3,8 @@ SET ( EXTENSION_NAME "Extensions_DoseCalculation")
 ADD_LIBRARY( ${EXTENSION_NAME}
   Renderers/OpenGL/DoseCalcRenderingView.cpp
   Scene/DoseCalcNode.cpp
+  Resources/MHDResource.h
+  Resources/MHDResource.cpp
 )
 
 TARGET_LINK_LIBRARIES( ${EXTENSION_NAME}
