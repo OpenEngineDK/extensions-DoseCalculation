@@ -66,6 +66,13 @@ namespace OpenEngine {
             virtual unsigned int GetWidth() = 0;
 
             /**
+             * Get the scale of the width.
+             *
+             * @return scale of the width.
+             */
+            virtual float GetWidthScale() = 0;
+
+            /**
              * Get height in pixels on loaded texture.
              *
              * @return height in pixels.
@@ -73,11 +80,25 @@ namespace OpenEngine {
             virtual unsigned int GetHeight() = 0;
 
             /**
+             * Get the scale of the height.
+             *
+             * @return scale of the height.
+             */
+            virtual float GetHeightScale() = 0;
+
+            /**
              * Get depth in pixels on loaded texture.
              *
              * @return depth in pixels.
              */
             virtual unsigned int GetDepth() = 0;
+
+            /**
+             * Get the scale of the depth.
+             *
+             * @return scale of the depth.
+             */
+            virtual float GetDepthScale() = 0;
 
             /**
              * Get color depth on loaded texture.
@@ -91,7 +112,7 @@ namespace OpenEngine {
              *
              * @return Char pointer to loaded data.
              */
-            virtual unsigned char* GetData() = 0;
+            virtual float* GetData() = 0;
 
             /**
              * Get color format of the texture.

@@ -43,9 +43,19 @@ namespace OpenEngine {
                 glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T, GL_CLAMP);
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-                glTexImage3D(GL_TEXTURE_3D, 0, GL_RGB, 
+
+                GLuint colorDepth;
+                switch (image->GetColorFormat()) {
+                case LUMINANCE: colorDepth = GL_LUMINANCE; break;
+                case RGB: colorDepth = GL_RGB; break;
+                case RGBA: colorDepth = GL_RGBA; break;
+                default:
+                    colorDepth = GL_BGRA;
+                }
+                
+                glTexImage3D(GL_TEXTURE_3D, 0, colorDepth, 
                              image->GetWidth(), image->GetHeight(), image->GetDepth(),
-                             0, GL_RGBA, GL_UNSIGNED_BYTE, image->GetData());
+                             0, GL_RGBA, GL_FLOAT, image->GetData());
 
                 image->SetID(texId);
 

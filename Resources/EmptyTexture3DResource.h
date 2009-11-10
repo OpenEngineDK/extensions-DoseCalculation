@@ -18,22 +18,26 @@ namespace OpenEngine {
         class EmptyTexture3DResource : public ITexture3DResource {
         private:
             unsigned int width, height, depth, colorDepth;
-            unsigned char* data;
+            //float widthScale, heightScale, depthScale;
+            float* data;
             int id;
         public:
             EmptyTexture3DResource(unsigned int w, unsigned int h, unsigned int d, unsigned int cd) 
                 : width(w), height(h), depth(d), colorDepth(cd), data(NULL), id(0) {
             }
             ~EmptyTexture3DResource() {delete [] data; }
-            void Load() { if (!data) data = new unsigned char[width * height * depth * colorDepth / 8]; }
+            void Load() { if (!data) data = new float[width * height * depth * colorDepth / 8]; }
             void Unload() { delete data; }
             int GetID() { return id; }
             void SetID(int id) { this->id = id; }
-            unsigned int GetWidth() { return width; }
+            unsigned int GetWidth() { return width; }            
             unsigned int GetHeight() { return height; }
             unsigned int GetDepth() { return depth; }
+            float GetWidthScale() const { return 1; }
+            float GetHeightScale() const { return 1; }
+            float GetDepthScale() const { return 1; }
             unsigned int GetColorDepth() { return colorDepth; }
-            unsigned char* GetData() { return data; }
+            float* GetData() { return data; }
             ColorFormat GetColorFormat() { 
                 switch (depth){
                 case 8: return LUMINANCE;
