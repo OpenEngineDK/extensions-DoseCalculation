@@ -14,13 +14,11 @@ namespace OpenEngine {
     namespace Scene {
 
         DoseCalcNode::DoseCalcNode()
-            : image(ITexture3DResourcePtr()){
-
+            : image(ITexture3DResourcePtr()), xPlaneCoord(0), yPlaneCoord(0), zPlaneCoord(0) {
         }
 
         DoseCalcNode::DoseCalcNode(ITexture3DResourcePtr i)
-            : image(i){
-            
+            : image(i), xPlaneCoord(0), yPlaneCoord(0), zPlaneCoord(0) {
         }
 
         DoseCalcNode::~DoseCalcNode(){

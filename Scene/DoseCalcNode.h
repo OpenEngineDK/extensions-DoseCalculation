@@ -27,6 +27,8 @@ namespace OpenEngine {
         
             ITexture3DResourcePtr image;
 
+            float xPlaneCoord, yPlaneCoord, zPlaneCoord;
+
         public:
             DoseCalcNode();
             DoseCalcNode(ITexture3DResourcePtr i);
@@ -39,6 +41,13 @@ namespace OpenEngine {
             // **** Get/Set ****
             
             ITexture3DResourcePtr GetImage() const { return image; }
+            float GetXPlaneCoord() const { return xPlaneCoord; }
+            float GetYPlaneCoord() const { return yPlaneCoord; }
+            float GetZPlaneCoord() const { return zPlaneCoord; }
+
+            void SetXPlaneCoord(float x) { xPlaneCoord = x; }
+            void SetYPlaneCoord(float y) { yPlaneCoord = y; }
+            void SetZPlaneCoord(float z) { zPlaneCoord = z; }
         };
 
     }
