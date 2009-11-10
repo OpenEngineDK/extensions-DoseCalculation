@@ -24,8 +24,17 @@ namespace OpenEngine {
         
         class DoseCalcNode : public ISceneNode, public IListener<RenderingEventArg>  {
             OE_SCENE_NODE(DoseCalcNode, ISceneNode)
+
+            static const int DIMENSIONS = 3;
+            static const int TEXCOORDS = 2;
         
             ITexture3DResourcePtr image;
+
+            int width, height, depth;
+            float widthScale, heightScale, depthScale;
+
+            float* vertices;
+            float* texCoords;
 
             float xPlaneCoord, yPlaneCoord, zPlaneCoord;
 
@@ -48,6 +57,14 @@ namespace OpenEngine {
             void SetXPlaneCoord(float x) { xPlaneCoord = x; }
             void SetYPlaneCoord(float y) { yPlaneCoord = y; }
             void SetZPlaneCoord(float z) { zPlaneCoord = z; }
+
+        private:
+            inline void Init();
+            inline void SetupVertices();
+            inline void SetupTexCoords();
+            inline int GetIndex(int x, int y, int z);
+            inline float* GetVertex(int x, int y, int z);
+            inline float* GetTexCoord(int x, int y, int z);
         };
 
     }
