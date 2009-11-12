@@ -46,7 +46,7 @@ namespace OpenEngine {
                 
                 glBegin(GL_QUADS);
 
-                float x = node->GetZPlaneCoord();
+                float x = node->GetXPlaneCoord();
                 glArrayElement(node->GetIndice(x, 0, 0));
                 glArrayElement(node->GetIndice(x, 0, depth-1));
                 glArrayElement(node->GetIndice(x, height-1, depth-1));

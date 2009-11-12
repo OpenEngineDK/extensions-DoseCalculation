@@ -118,6 +118,33 @@ namespace OpenEngine {
             return GetIndex(x, y, z);
         }
 
+        void DoseCalcNode::SetXPlaneCoord(int x) { 
+            if (x < 0)
+                xPlaneCoord = 0;
+            else if (x > width-1)
+                xPlaneCoord = width-1;
+            else
+                xPlaneCoord = x; 
+        }
+
+        void DoseCalcNode::SetYPlaneCoord(int y) { 
+            if (y < 0)
+                yPlaneCoord = 0;
+            else if (y > height - 1)
+                yPlaneCoord = height - 1;
+            else
+                yPlaneCoord = y; 
+        }
+
+        void DoseCalcNode::SetZPlaneCoord(int z) { 
+            if (z < 0)
+                zPlaneCoord = 0;
+            else if (z > depth-1)
+                zPlaneCoord = depth-1;
+            else
+                zPlaneCoord = z; 
+        }
+
         // *** inline methods ***
 
         void DoseCalcNode::SetupVertices(){

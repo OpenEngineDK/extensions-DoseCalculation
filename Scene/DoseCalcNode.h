@@ -41,7 +41,7 @@ namespace OpenEngine {
             float* texCoords;
             unsigned int texCoordId;
 
-            float xPlaneCoord, yPlaneCoord, zPlaneCoord;
+            int xPlaneCoord, yPlaneCoord, zPlaneCoord;
 
         public:
             DoseCalcNode();
@@ -58,16 +58,16 @@ namespace OpenEngine {
             unsigned int GetVerticeId() const { return verticeId; }
             unsigned int GetTexCoordId() const { return texCoordId; }
             int GetIndice(int x, int y, int z);
-            float GetXPlaneCoord() const { return xPlaneCoord; }
-            float GetYPlaneCoord() const { return yPlaneCoord; }
-            float GetZPlaneCoord() const { return zPlaneCoord; }
+            int GetXPlaneCoord() const { return xPlaneCoord; }
+            int GetYPlaneCoord() const { return yPlaneCoord; }
+            int GetZPlaneCoord() const { return zPlaneCoord; }
             float GetWidth() const { return width * widthScale; }
             float GetHeight() const { return height * heightScale; }
             float GetDepth() const { return depth * depthScale; }
 
-            void SetXPlaneCoord(float x) { xPlaneCoord = x; }
-            void SetYPlaneCoord(float y) { yPlaneCoord = y; }
-            void SetZPlaneCoord(float z) { zPlaneCoord = z; }
+            void SetXPlaneCoord(int x);
+            void SetYPlaneCoord(int y);
+            void SetZPlaneCoord(int z);
 
         private:
             inline void Init();
