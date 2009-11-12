@@ -151,14 +151,16 @@ float MHDResource::GetDepthScale() {
 }
 
 ColorFormat MHDResource::GetColorFormat() {
-    if (col_depth==32)
+    switch(col_depth){
+    case sizeof(float) * 4:
         return RGBA;
-    else if (col_depth==24)
+    case sizeof(float) * 3:
         return RGB;
-    else if (col_depth==8)
+    case sizeof(float):
         return LUMINANCE;
-    else
+    default:
         throw Exception("unknown color depth");
+    }
 }
 
 } //NS Resources
