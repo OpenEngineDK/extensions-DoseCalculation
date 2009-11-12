@@ -95,7 +95,8 @@ void MHDResource::Load() {
     if (count != dim_x * dim_y * dim_z) throw new ResourceException("Raw file read error."); 
     
     for(unsigned int i=0; i < dim_x * dim_y * dim_z; i++)
-		data[i] = (float)s_data[i];
+		//data[i] = (float)s_data[i];
+        data[i] = (((float)s_data[i]) + 1000.0f) / 2000.0f;
 	delete [] s_data;
     loaded = true;
 }

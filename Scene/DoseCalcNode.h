@@ -59,6 +59,9 @@ namespace OpenEngine {
             float GetXPlaneCoord() const { return xPlaneCoord; }
             float GetYPlaneCoord() const { return yPlaneCoord; }
             float GetZPlaneCoord() const { return zPlaneCoord; }
+            float GetWidth() const { return width * widthScale; }
+            float GetHeight() const { return height * heightScale; }
+            float GetDepth() const { return depth * depthScale; }
 
             void SetXPlaneCoord(float x) { xPlaneCoord = x; }
             void SetYPlaneCoord(float y) { yPlaneCoord = y; }

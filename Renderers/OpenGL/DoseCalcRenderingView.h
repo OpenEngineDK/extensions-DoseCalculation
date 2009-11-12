@@ -19,6 +19,7 @@ namespace OpenGL {
 using namespace OpenEngine::Renderers;
     
     class DoseCalcRenderingView : public RenderingView {
+    public:
         DoseCalcRenderingView(Viewport& viewport);
 
         void VisitDoseCalcNode(DoseCalcNode* node);

@@ -9,6 +9,7 @@
 
 #include <Scene/DoseCalcNode.h>
 #include <Meta/OpenGL.h>
+#include <Logging/Logger.h>
 
 namespace OpenEngine {
     namespace Scene {
@@ -24,7 +25,6 @@ namespace OpenEngine {
         }
 
         void DoseCalcNode::Init(){
-            xPlaneCoord = yPlaneCoord = zPlaneCoord = 0;
             vertices = texCoords = NULL;
             if (image != NULL){
                 image->Load();
@@ -34,9 +34,13 @@ namespace OpenEngine {
                 widthScale = image->GetWidthScale();
                 heightScale = image->GetHeightScale();
                 depthScale = image->GetDepthScale();
+                xPlaneCoord = width / 2.0f;
+                yPlaneCoord = height / 2.0f;
+                zPlaneCoord = depth / 2.0f;
             }else{
                 width = height = depth = 0;
                 widthScale = heightScale = depthScale = 0;
+                xPlaneCoord = yPlaneCoord = zPlaneCoord = 0;
             }
 
             numberOfVertices = width * height * depth;
@@ -65,11 +69,12 @@ namespace OpenEngine {
                 GLuint texId;
                 glGenTextures(1, &texId);
                 glBindTexture(GL_TEXTURE_3D, texId);
-                glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S, GL_CLAMP);
-                glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T, GL_CLAMP);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
+                glTexParameteri(GL_TEXTURE_3D,GL_TEXTURE_WRAP_S, GL_REPEAT);
+                glTexParameteri(GL_TEXTURE_3D,GL_TEXTURE_WRAP_T, GL_REPEAT);
+                glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+                glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+                glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+                
                 GLuint colorDepth;
                 switch (image->GetColorFormat()) {
                 case LUMINANCE: colorDepth = GL_LUMINANCE; break;
@@ -80,8 +85,8 @@ namespace OpenEngine {
                 }
                 
                 glTexImage3D(GL_TEXTURE_3D, 0, colorDepth, 
-                             image->GetWidth(), image->GetHeight(), image->GetDepth(),
-                             0, GL_RGBA, GL_FLOAT, image->GetData());
+                             width, height, depth,
+                             0, colorDepth, GL_FLOAT, image->GetData());
 
                 image->SetID(texId);
 

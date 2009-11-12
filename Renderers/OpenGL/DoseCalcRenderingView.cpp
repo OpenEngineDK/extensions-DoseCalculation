@@ -11,6 +11,7 @@
 
 #include <Scene/DoseCalcNode.h>
 #include <Resources/ITexture3DResource.h>
+#include <Logging/Logger.h>
 
 using namespace OpenEngine::Scene;
 using namespace OpenEngine::Resources;
@@ -35,7 +36,22 @@ namespace OpenEngine {
                 float depth = (float) image->GetDepth();
                 
                 // Draw planes
+                /*
+                glBegin(GL_QUADS);
+                glTexCoord3f(0.5, 0, 0);
+                glVertex3f(100, 0, 0);
 
+                glTexCoord3f(0.5, 1, 0);
+                glVertex3f(100, 100, 0);
+
+                glTexCoord3f(0.5, 1, 1);
+                glVertex3f(100, 100, 100);
+
+                glTexCoord3f(0.5, 0, 1);
+                glVertex3f(100, 0, 100);
+                glEnd();
+
+                */
                 glBegin(GL_QUADS);
                 // Draw the xy plane
                 float z = node->GetZPlaneCoord();
