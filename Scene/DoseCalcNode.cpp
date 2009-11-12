@@ -149,6 +149,7 @@ namespace OpenEngine {
 
         void DoseCalcNode::SetupVertices(){
             vertices = new float[numberOfVertices * DIMENSIONS];
+
             for (int x = 0; x < width; ++x)
                 for (int y = 0; y < height; ++y)
                     for (int z = 0; z < depth; ++z){
@@ -161,6 +162,7 @@ namespace OpenEngine {
         
         void DoseCalcNode::SetupTexCoords(){
             texCoords = new float[numberOfVertices * TEXCOORDS];
+
             for (int x = 0; x < width; ++x)
                 for (int y = 0; y < height; ++y)
                     for (int z = 0; z < depth; ++z){

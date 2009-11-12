@@ -27,7 +27,7 @@ namespace OpenEngine {
 
         public:
             static const int DIMENSIONS = 3;
-            static const int TEXCOORDS = 2;
+            static const int TEXCOORDS = 3;
         
         private:
             ITexture3DResourcePtr image;
