@@ -38,6 +38,8 @@ namespace OpenEngine {
                 width = height = depth = 0;
                 widthScale = heightScale = depthScale = 0;
             }
+
+            numberOfVertices = width * height * depth;
         }
 
         DoseCalcNode::~DoseCalcNode(){
@@ -85,9 +87,36 @@ namespace OpenEngine {
 
                 glBindTexture(GL_TEXTURE_3D, 0);
             }
+
+            // load the vbo's
+            
+            // Vertice buffer object
+            glGenBuffers(1, &verticeId);
+            glBindBuffer(GL_ARRAY_BUFFER, verticeId);
+            glBufferData(GL_ARRAY_BUFFER,
+                         sizeof(GLfloat) * numberOfVertices * DIMENSIONS,
+                         vertices, GL_STATIC_DRAW);
+            
+            // Tex Coord buffer object
+            glGenBuffers(1, &texCoordId);
+            glBindBuffer(GL_ARRAY_BUFFER, texCoordId);
+            glBufferData(GL_ARRAY_BUFFER, 
+                         sizeof(GLfloat) * numberOfVertices * TEXCOORDS,
+                         texCoords, GL_STATIC_DRAW);
+
+            glBindBuffer(GL_ARRAY_BUFFER, 0);
         }
 
+        // **** Get/Set ****
+
+        int DoseCalcNode::GetIndice(int x, int y, int z){
+            return GetIndex(x, y, z);
+        }
+
+        // *** inline methods ***
+
         void DoseCalcNode::SetupVertices(){
+            vertices = new float[numberOfVertices * DIMENSIONS];
             for (int x = 0; x < width; ++x)
                 for (int y = 0; y < height; ++y)
                     for (int z = 0; z < depth; ++z){
@@ -99,6 +128,7 @@ namespace OpenEngine {
         }
         
         void DoseCalcNode::SetupTexCoords(){
+            texCoords = new float[numberOfVertices * TEXCOORDS];
             for (int x = 0; x < width; ++x)
                 for (int y = 0; y < height; ++y)
                     for (int z = 0; z < depth; ++z){

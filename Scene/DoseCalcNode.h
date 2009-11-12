@@ -32,9 +32,12 @@ namespace OpenEngine {
 
             int width, height, depth;
             float widthScale, heightScale, depthScale;
+            int numberOfVertices;
 
             float* vertices;
+            unsigned int verticeId;
             float* texCoords;
+            unsigned int texCoordId;
 
             float xPlaneCoord, yPlaneCoord, zPlaneCoord;
 
@@ -50,6 +53,9 @@ namespace OpenEngine {
             // **** Get/Set ****
             
             ITexture3DResourcePtr GetImage() const { return image; }
+            unsigned int GetVerticeId() const { return verticeId; }
+            unsigned int GetTexCoordId() const { return texCoordId; }
+            int GetIndice(int x, int y, int z);
             float GetXPlaneCoord() const { return xPlaneCoord; }
             float GetYPlaneCoord() const { return yPlaneCoord; }
             float GetZPlaneCoord() const { return zPlaneCoord; }
