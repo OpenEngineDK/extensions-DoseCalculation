@@ -25,9 +25,11 @@ namespace OpenEngine {
         class DoseCalcNode : public ISceneNode, public IListener<RenderingEventArg>  {
             OE_SCENE_NODE(DoseCalcNode, ISceneNode)
 
+        public:
             static const int DIMENSIONS = 3;
             static const int TEXCOORDS = 2;
         
+        private:
             ITexture3DResourcePtr image;
 
             int width, height, depth;
