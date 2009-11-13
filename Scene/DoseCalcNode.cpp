@@ -96,18 +96,21 @@ namespace OpenEngine {
             // load the vbo's
             
             // Vertice buffer object
-            glGenBuffers(1, &verticeId);
-            glBindBuffer(GL_ARRAY_BUFFER, verticeId);
+            GLuint bufId;
+            glGenBuffers(1, &bufId);
+            glBindBuffer(GL_ARRAY_BUFFER, bufId);
             glBufferData(GL_ARRAY_BUFFER,
                          sizeof(GLfloat) * numberOfVertices * DIMENSIONS,
                          vertices, GL_STATIC_DRAW);
+            verticeId = bufId;
             
             // Tex Coord buffer object
-            glGenBuffers(1, &texCoordId);
-            glBindBuffer(GL_ARRAY_BUFFER, texCoordId);
+            glGenBuffers(1, &bufId);
+            glBindBuffer(GL_ARRAY_BUFFER, bufId);
             glBufferData(GL_ARRAY_BUFFER, 
                          sizeof(GLfloat) * numberOfVertices * TEXCOORDS,
                          texCoords, GL_STATIC_DRAW);
+            texCoordId = bufId;
 
             glBindBuffer(GL_ARRAY_BUFFER, 0);
         }
@@ -118,31 +121,31 @@ namespace OpenEngine {
             return GetIndex(x, y, z);
         }
 
-        void DoseCalcNode::SetXPlaneCoord(int x) { 
+        void DoseCalcNode::SetXPlaneCoord(int x) {
             if (x < 0)
                 xPlaneCoord = 0;
             else if (x > width-1)
                 xPlaneCoord = width-1;
             else
-                xPlaneCoord = x; 
+                xPlaneCoord = x;
         }
 
-        void DoseCalcNode::SetYPlaneCoord(int y) { 
+        void DoseCalcNode::SetYPlaneCoord(int y) {
             if (y < 0)
                 yPlaneCoord = 0;
             else if (y > height - 1)
                 yPlaneCoord = height - 1;
             else
-                yPlaneCoord = y; 
+                yPlaneCoord = y;
         }
 
-        void DoseCalcNode::SetZPlaneCoord(int z) { 
+        void DoseCalcNode::SetZPlaneCoord(int z) {
             if (z < 0)
                 zPlaneCoord = 0;
             else if (z > depth-1)
                 zPlaneCoord = depth-1;
             else
-                zPlaneCoord = z; 
+                zPlaneCoord = z;
         }
 
         // *** inline methods ***
