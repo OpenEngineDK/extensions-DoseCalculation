@@ -14,16 +14,19 @@
 #include <Core/IListener.h>
 #include <Renderers/IRenderer.h>
 #include <Resources/ITexture3DResource.h>
+#include <Widgets/Widgifier.h>
 
 using namespace OpenEngine::Core;
 using namespace OpenEngine::Resources;
 using namespace OpenEngine::Renderers;
+using namespace OpenEngine::Widgets;
 
 namespace OpenEngine {
     namespace Scene {
         
         class DoseCalcNode : public ISceneNode, public IListener<RenderingEventArg>  {
             OE_SCENE_NODE(DoseCalcNode, ISceneNode)
+            WIDGET_INIT();
 
         public:
             static const int DIMENSIONS = 3;

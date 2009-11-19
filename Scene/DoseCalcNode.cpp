@@ -25,6 +25,8 @@ namespace OpenEngine {
         }
 
         void DoseCalcNode::Init(){
+            WIDGET_PROPERTY(X, GetXPlaneCoord, SetXPlaneCoord, DoseCalcNode, INT_VALUE);
+
             vertices = texCoords = NULL;
             if (image != NULL){
                 image->Load();
