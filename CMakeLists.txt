@@ -12,6 +12,7 @@ TARGET_LINK_LIBRARIES( ${EXTENSION_NAME}
   OpenEngine_Renderers
   OpenEngine_Resources
   Extensions_OpenGLRenderer
+  Extensions_OpenGLSelection
   ${OPENGL_LIBRARY}
   ${GLEW_LIBRARIES}
   ${SDL_LIBRARY}
