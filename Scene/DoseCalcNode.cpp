@@ -25,27 +25,27 @@ namespace OpenEngine {
         }
 
         void DoseCalcNode::Init(){
-            WIDGET_PROPERTY(X, GetXPlaneCoord, SetXPlaneCoord, DoseCalcNode, INT_VALUE);
-
             vertices = texCoords = NULL;
             if (image != NULL){
                 image->Load();
                 width = image->GetWidth();
                 height = image->GetHeight();
                 depth = image->GetDepth();
-                widthScale = image->GetWidthScale();
-                heightScale = image->GetHeightScale();
-                depthScale = image->GetDepthScale();
+                scale = Vector<3, float>(image->GetWidthScale(), image->GetHeightScale(), image->GetDepthScale());
                 xPlaneCoord = width / 2.0f;
                 yPlaneCoord = height / 2.0f;
                 zPlaneCoord = depth / 2.0f;
             }else{
                 width = height = depth = 0;
-                widthScale = heightScale = depthScale = 0;
+                scale = Vector<3, float>();
                 xPlaneCoord = yPlaneCoord = zPlaneCoord = 0;
             }
 
-            numberOfVertices = width * height * depth;
+            numberOfVertices = 12;
+
+            WIDGET_PROPERTY(X, GetXPlaneCoord, SetXPlaneCoord, DoseCalcNode, INT_VALUE);
+            WIDGET_PROPERTY(Y, GetYPlaneCoord, SetYPlaneCoord, DoseCalcNode, INT_VALUE);
+            WIDGET_PROPERTY(Z, GetZPlaneCoord, SetZPlaneCoord, DoseCalcNode, INT_VALUE);
         }
 
         DoseCalcNode::~DoseCalcNode(){
@@ -61,8 +61,29 @@ namespace OpenEngine {
         }
 
         void DoseCalcNode::Handle(RenderingEventArg arg){
+            // Alloc memory for the buffer objects
+            
+            // Vertice buffer object
+            GLuint bufId;
+            glGenBuffers(1, &bufId);
+            glBindBuffer(GL_ARRAY_BUFFER, bufId);
+            glBufferData(GL_ARRAY_BUFFER,
+                         sizeof(GLfloat) * numberOfVertices * DIMENSIONS,
+                         vertices, GL_STATIC_DRAW);
+            verticeId = bufId;
+            
+            // Tex Coord buffer object
+            glGenBuffers(1, &bufId);
+            glBindBuffer(GL_ARRAY_BUFFER, bufId);
+            glBufferData(GL_ARRAY_BUFFER, 
+                         sizeof(GLfloat) * numberOfVertices * TEXCOORDS,
+                         texCoords, GL_STATIC_DRAW);
+            texCoordId = bufId;
+
+            glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+
             SetupVertices();
-            SetupTexCoords();
 
             if (image != NULL){
                 // Load the texture
@@ -95,26 +116,23 @@ namespace OpenEngine {
                 glBindTexture(GL_TEXTURE_3D, 0);
             }
 
-            // load the vbo's
-            
-            // Vertice buffer object
-            GLuint bufId;
-            glGenBuffers(1, &bufId);
-            glBindBuffer(GL_ARRAY_BUFFER, bufId);
-            glBufferData(GL_ARRAY_BUFFER,
-                         sizeof(GLfloat) * numberOfVertices * DIMENSIONS,
-                         vertices, GL_STATIC_DRAW);
-            verticeId = bufId;
-            
-            // Tex Coord buffer object
-            glGenBuffers(1, &bufId);
-            glBindBuffer(GL_ARRAY_BUFFER, bufId);
-            glBufferData(GL_ARRAY_BUFFER, 
-                         sizeof(GLfloat) * numberOfVertices * TEXCOORDS,
-                         texCoords, GL_STATIC_DRAW);
-            texCoordId = bufId;
+            // print buffer objects
+            /*
+            logger.info << "Vertices:" << logger.end;
+            for(int i = 0; i < numberOfVertices; ++i){
+                int index = i * DIMENSIONS;
+                Vector<3, float> hat = Vector<3, float>(vertices + index);
+                logger.info << "Vertice " << i << " is << " << hat.ToString() << logger.end;
+            }
 
-            glBindBuffer(GL_ARRAY_BUFFER, 0);
+            logger.info << "TexCoords:" << logger.end;
+            for(int i = 0; i < numberOfVertices; ++i){
+                int index = i * TEXCOORDS;
+                Vector<3, float> hat = Vector<3, float>(texCoords + index);
+                logger.info << "TexCoord " << i << " is << " << hat.ToString() << logger.end;
+            }
+            */
+                
         }
 
         // **** Get/Set ****
@@ -130,6 +148,8 @@ namespace OpenEngine {
                 xPlaneCoord = width-1;
             else
                 xPlaneCoord = x;
+            
+            SetupXPlane();
         }
 
         void DoseCalcNode::SetYPlaneCoord(int y) {
@@ -139,6 +159,8 @@ namespace OpenEngine {
                 yPlaneCoord = height - 1;
             else
                 yPlaneCoord = y;
+
+            SetupYPlane();
         }
 
         void DoseCalcNode::SetZPlaneCoord(int z) {
@@ -148,48 +170,147 @@ namespace OpenEngine {
                 zPlaneCoord = depth-1;
             else
                 zPlaneCoord = z;
+
+            SetupZPlane();
+        }
+
+        void DoseCalcNode::AddRay(Ray* ray){
+
         }
 
         // *** inline methods ***
 
         void DoseCalcNode::SetupVertices(){
             vertices = new float[numberOfVertices * DIMENSIONS];
-
-            for (int x = 0; x < width; ++x)
-                for (int y = 0; y < height; ++y)
-                    for (int z = 0; z < depth; ++z){
-                        float* vertex = GetVertex(x, y, z);
-                        vertex[0] = x * widthScale;
-                        vertex[1] = y * heightScale;
-                        vertex[2] = z * depthScale;
-                    }
+            texCoords = new float[numberOfVertices * TEXCOORDS];
+            
+            SetupXPlane();
+            SetupYPlane();
+            SetupZPlane();
         }
         
-        void DoseCalcNode::SetupTexCoords(){
-            texCoords = new float[numberOfVertices * TEXCOORDS];
+        void DoseCalcNode::SetupXPlane(){
+            glBindBuffer(GL_ARRAY_BUFFER, verticeId);
+            float* vbo = (float*) glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
 
-            for (int x = 0; x < width; ++x)
-                for (int y = 0; y < height; ++y)
-                    for (int z = 0; z < depth; ++z){
-                        float* coord = GetTexCoord(x, y, z);
-                        coord[0] = (x + 0.5f) / (float) width;
-                        coord[1] = (y + 0.5f) / (float) height;
-                        coord[2] = (z + 0.5f) / (float) depth;
-                    }
+            // Setup vertices
+            int offset = 0 * DIMENSIONS;
+            vbo[offset + 0] = vertices[offset + 0] = xPlaneCoord;
+            vbo[offset + 1] = vertices[offset + 1] = 0;
+            vbo[offset + 2] = vertices[offset + 2] = 0;
+
+            offset += DIMENSIONS;
+            vbo[offset + 0] = vertices[offset + 0] = xPlaneCoord;
+            vbo[offset + 1] = vertices[offset + 1] = 0;
+            vbo[offset + 2] = vertices[offset + 2] = depth-1;
+
+            offset += DIMENSIONS;
+            vbo[offset + 0] = vertices[offset + 0] = xPlaneCoord;
+            vbo[offset + 1] = vertices[offset + 1] = height-1;
+            vbo[offset + 2] = vertices[offset + 2] = depth-1;
+
+            offset += DIMENSIONS;
+            vbo[offset + 0] = vertices[offset + 0] = xPlaneCoord;
+            vbo[offset + 1] = vertices[offset + 1] = height-1;
+            vbo[offset + 2] = vertices[offset + 2] = 0;
+
+            glUnmapBuffer(GL_ARRAY_BUFFER);
+
+            // Setup texture coords
+            glBindBuffer(GL_ARRAY_BUFFER, texCoordId);
+            vbo = (float*) glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
+            for (int i = 0 * TEXCOORDS; i < (0 + 4) * TEXCOORDS; i += TEXCOORDS){
+                vbo[i] = texCoords[i] = (vertices[i] + 0.5f) / width;
+                vbo[i+1] = texCoords[i+1] = (vertices[i+1] + 0.5f) / height;
+                vbo[i+2] = texCoords[i+2] = (vertices[i+2] + 0.5f) / depth;
+            }
+
+            glUnmapBuffer(GL_ARRAY_BUFFER);
+            glBindBuffer(GL_ARRAY_BUFFER, 0);
+        }
+
+        void DoseCalcNode::SetupYPlane(){
+            glBindBuffer(GL_ARRAY_BUFFER, verticeId);
+            float* vbo = (float*) glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
+
+            // Setup vertices
+            int offset = 4 * DIMENSIONS;
+            vbo[offset + 0] = vertices[offset + 0] = 0;
+            vbo[offset + 1] = vertices[offset + 1] = yPlaneCoord;
+            vbo[offset + 2] = vertices[offset + 2] = 0;
+
+            offset += DIMENSIONS;
+            vbo[offset + 0] = vertices[offset + 0] = width-1;
+            vbo[offset + 1] = vertices[offset + 1] = yPlaneCoord;
+            vbo[offset + 2] = vertices[offset + 2] = 0;
+
+            offset += DIMENSIONS;
+            vbo[offset + 0] = vertices[offset + 0] = width-1;
+            vbo[offset + 1] = vertices[offset + 1] = yPlaneCoord;
+            vbo[offset + 2] = vertices[offset + 2] = depth-1;
+
+            offset += DIMENSIONS;
+            vbo[offset + 0] = vertices[offset + 0] = 0;
+            vbo[offset + 1] = vertices[offset + 1] = yPlaneCoord;
+            vbo[offset + 2] = vertices[offset + 2] = depth-1;
+
+            glUnmapBuffer(GL_ARRAY_BUFFER);
+
+            // Setup texture coords
+            glBindBuffer(GL_ARRAY_BUFFER, texCoordId);
+            vbo = (float*) glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
+            for (int i = 4 * TEXCOORDS; i < (4 + 4) * TEXCOORDS; i += TEXCOORDS){
+                vbo[i] = texCoords[i] = (vertices[i] + 0.5f) / width;
+                vbo[i+1] = texCoords[i+1] = (vertices[i+1] + 0.5f) / height;
+                vbo[i+2] = texCoords[i+2] = (vertices[i+2] + 0.5f) / depth;
+            }
+
+            glUnmapBuffer(GL_ARRAY_BUFFER);
+            glBindBuffer(GL_ARRAY_BUFFER, 0);
+        }
+
+        void DoseCalcNode::SetupZPlane(){
+            glBindBuffer(GL_ARRAY_BUFFER, verticeId);
+            float* vbo = (float*) glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
+
+            // Setup vertices
+            int offset = 8 * DIMENSIONS;
+            vbo[offset + 0] = vertices[offset + 0] = 0;
+            vbo[offset + 1] = vertices[offset + 1] = 0;
+            vbo[offset + 2] = vertices[offset + 2] = zPlaneCoord;
+
+            offset += DIMENSIONS;
+            vbo[offset + 0] = vertices[offset + 0] = width-1;
+            vbo[offset + 1] = vertices[offset + 1] = 0;
+            vbo[offset + 2] = vertices[offset + 2] = zPlaneCoord;
+
+            offset += DIMENSIONS;
+            vbo[offset + 0] = vertices[offset + 0] = width-1;
+            vbo[offset + 1] = vertices[offset + 1] = height-1;
+            vbo[offset + 2] = vertices[offset + 2] = zPlaneCoord;
+
+            offset += DIMENSIONS;
+            vbo[offset + 0] = vertices[offset + 0] = 0;
+            vbo[offset + 1] = vertices[offset + 1] = height-1;
+            vbo[offset + 2] = vertices[offset + 2] = zPlaneCoord;
+
+            glUnmapBuffer(GL_ARRAY_BUFFER);
+
+            // Setup texture coords
+            glBindBuffer(GL_ARRAY_BUFFER, texCoordId);
+            vbo = (float*) glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
+            for (int i = 8 * TEXCOORDS; i < (8 + 4) * TEXCOORDS; i += TEXCOORDS){
+                vbo[i] = texCoords[i] = (vertices[i] + 0.5f) / width;
+                vbo[i+1] = texCoords[i+1] = (vertices[i+1] + 0.5f) / height;
+                vbo[i+2] = texCoords[i+2] = (vertices[i+2] + 0.5f) / depth;
+            }
+
+            glUnmapBuffer(GL_ARRAY_BUFFER);
+            glBindBuffer(GL_ARRAY_BUFFER, 0);
         }
 
         int DoseCalcNode::GetIndex(int x, int y, int z){
             return z + x * depth + y * width * depth;
         }        
-        
-        float* DoseCalcNode::GetVertex(int x, int y, int z){
-            int index = GetIndex(x, y, z);
-            return vertices + index * DIMENSIONS;
-        }
-        
-        float* DoseCalcNode::GetTexCoord(int x, int y, int z){
-            int index = GetIndex(x, y, z);
-            return texCoords + index * TEXCOORDS;
-        }
     }
 }

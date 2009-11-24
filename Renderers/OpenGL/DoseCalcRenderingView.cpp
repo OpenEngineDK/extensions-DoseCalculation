@@ -31,10 +31,6 @@ namespace OpenEngine {
                 ITexture3DResourcePtr image = node->GetImage();
                 glBindTexture(GL_TEXTURE_3D, image->GetID());
 
-                float width = (float) image->GetWidth();
-                float height = (float) image->GetHeight();
-                float depth = (float) image->GetDepth();
-
                 glBindBuffer(GL_ARRAY_BUFFER, node->GetVerticeId());
                 glEnableClientState(GL_VERTEX_ARRAY);
                 glVertexPointer(DoseCalcNode::DIMENSIONS, GL_FLOAT, 0, 0);
@@ -44,28 +40,18 @@ namespace OpenEngine {
                 glEnableClientState(GL_TEXTURE_COORD_ARRAY);
                 glTexCoordPointer(DoseCalcNode::TEXCOORDS, GL_FLOAT, 0, 0);
                 
-                glBegin(GL_QUADS);
-
-                float x = node->GetXPlaneCoord();
-                glArrayElement(node->GetIndice(x, 0, 0));
-                glArrayElement(node->GetIndice(x, 0, depth-1));
-                glArrayElement(node->GetIndice(x, height-1, depth-1));
-                glArrayElement(node->GetIndice(x, height-1, 0));
-
-                float y = node->GetYPlaneCoord();
-                glArrayElement(node->GetIndice(0, y, 0));
-                glArrayElement(node->GetIndice(width-1, y, 0));
-                glArrayElement(node->GetIndice(width-1, y, depth-1));
-                glArrayElement(node->GetIndice(0, y, depth-1));
-
-                float z = node->GetZPlaneCoord();
-                glArrayElement(node->GetIndice(0, 0, z));
-                glArrayElement(node->GetIndice(width-1, 0, z));
-                glArrayElement(node->GetIndice(width-1, height-1, z));
-                glArrayElement(node->GetIndice(0, height-1, z));
-
-                glEnd();
-
+                // Render
+                {
+                    glPushMatrix();
+                    
+                    Vector<3, float> scale = node->GetScale();
+                    glScalef(scale[0], scale[1], scale[2]);
+                    
+                    glColor4f(1,1,1,1);
+                    glDrawArrays(GL_QUADS, 0, 12);
+                    
+                    glPopMatrix();
+                }
 
                 glDisableClientState(GL_TEXTURE_COORD_ARRAY);
                 glDisableClientState(GL_VERTEX_ARRAY);

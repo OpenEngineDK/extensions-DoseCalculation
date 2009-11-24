@@ -36,7 +36,7 @@ namespace OpenEngine {
             ITexture3DResourcePtr image;
 
             int width, height, depth;
-            float widthScale, heightScale, depthScale;
+            Vector<3, float> scale;
             int numberOfVertices;
 
             float* vertices;
@@ -64,9 +64,10 @@ namespace OpenEngine {
             int GetXPlaneCoord() const { return xPlaneCoord; }
             int GetYPlaneCoord() const { return yPlaneCoord; }
             int GetZPlaneCoord() const { return zPlaneCoord; }
-            float GetWidth() const { return width * widthScale; }
-            float GetHeight() const { return height * heightScale; }
-            float GetDepth() const { return depth * depthScale; }
+            float GetWidth() { return width * scale[0]; }
+            float GetHeight() { return height * scale[1]; }
+            float GetDepth() { return depth * scale[2]; }
+            Vector<3, float> GetScale() const { return scale; }
 
             void SetXPlaneCoord(int x);
             void SetYPlaneCoord(int y);
@@ -75,10 +76,10 @@ namespace OpenEngine {
         private:
             inline void Init();
             inline void SetupVertices();
-            inline void SetupTexCoords();
+            inline void SetupXPlane();
+            inline void SetupYPlane();
+            inline void SetupZPlane();
             inline int GetIndex(int x, int y, int z);
-            inline float* GetVertex(int x, int y, int z);
-            inline float* GetTexCoord(int x, int y, int z);
         };
 
     }
