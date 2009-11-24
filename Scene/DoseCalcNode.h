@@ -22,6 +22,9 @@ using namespace OpenEngine::Renderers;
 using namespace OpenEngine::Widgets;
 
 namespace OpenEngine {
+    namespace Geometry {
+        class Ray;
+    }
     namespace Scene {
         
         class DoseCalcNode : public ISceneNode, public IListener<RenderingEventArg>  {
@@ -72,6 +75,8 @@ namespace OpenEngine {
             void SetXPlaneCoord(int x);
             void SetYPlaneCoord(int y);
             void SetZPlaneCoord(int z);
+
+            void AddRay(Geometry::Ray* ray);
 
         private:
             inline void Init();

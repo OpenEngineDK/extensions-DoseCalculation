@@ -9,7 +9,10 @@
 
 #include <Scene/DoseCalcNode.h>
 #include <Meta/OpenGL.h>
+#include <Geometry/Ray.h>
 #include <Logging/Logger.h>
+
+using namespace OpenEngine::Geometry;
 
 namespace OpenEngine {
     namespace Scene {
