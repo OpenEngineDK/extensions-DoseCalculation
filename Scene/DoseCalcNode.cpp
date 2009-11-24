@@ -10,6 +10,7 @@
 #include <Scene/DoseCalcNode.h>
 #include <Meta/OpenGL.h>
 #include <Geometry/Ray.h>
+#include <Resources/CopyTexture3DResource.h>
 #include <Logging/Logger.h>
 
 using namespace OpenEngine::Geometry;
@@ -18,23 +19,25 @@ namespace OpenEngine {
     namespace Scene {
 
         DoseCalcNode::DoseCalcNode()
-            : image(ITexture3DResourcePtr()) {
+            : intensityTex(ITexture3DResourcePtr()) {
             Init();
         }
 
         DoseCalcNode::DoseCalcNode(ITexture3DResourcePtr i)
-            : image(i){
+            : intensityTex(i){
             Init();
         }
 
         void DoseCalcNode::Init(){
             vertices = texCoords = NULL;
-            if (image != NULL){
-                image->Load();
-                width = image->GetWidth();
-                height = image->GetHeight();
-                depth = image->GetDepth();
-                scale = Vector<3, float>(image->GetWidthScale(), image->GetHeightScale(), image->GetDepthScale());
+            if (intensityTex != NULL){
+                intensityTex->Load();
+                doseTex = ITexture3DResourcePtr(new CopyTexture3DResource(intensityTex, RGB));
+                doseTex->Load();
+                width = intensityTex->GetWidth();
+                height = intensityTex->GetHeight();
+                depth = intensityTex->GetDepth();
+                scale = Vector<3, float>(intensityTex->GetWidthScale(), intensityTex->GetHeightScale(), intensityTex->GetDepthScale());
                 xPlaneCoord = width / 2.0f;
                 yPlaneCoord = height / 2.0f;
                 zPlaneCoord = depth / 2.0f;
@@ -42,6 +45,7 @@ namespace OpenEngine {
                 width = height = depth = 0;
                 scale = Vector<3, float>();
                 xPlaneCoord = yPlaneCoord = zPlaneCoord = 0;
+                doseTex = intensityTex;
             }
 
             numberOfVertices = 12;
@@ -72,7 +76,7 @@ namespace OpenEngine {
             glBindBuffer(GL_ARRAY_BUFFER, bufId);
             glBufferData(GL_ARRAY_BUFFER,
                          sizeof(GLfloat) * numberOfVertices * DIMENSIONS,
-                         vertices, GL_STATIC_DRAW);
+                         NULL, GL_STATIC_DRAW);
             verticeId = bufId;
             
             // Tex Coord buffer object
@@ -80,7 +84,7 @@ namespace OpenEngine {
             glBindBuffer(GL_ARRAY_BUFFER, bufId);
             glBufferData(GL_ARRAY_BUFFER, 
                          sizeof(GLfloat) * numberOfVertices * TEXCOORDS,
-                         texCoords, GL_STATIC_DRAW);
+                         NULL, GL_STATIC_DRAW);
             texCoordId = bufId;
 
             glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -88,9 +92,9 @@ namespace OpenEngine {
 
             SetupVertices();
 
-            if (image != NULL){
+            if (intensityTex != NULL){
                 // Load the texture
-                image->Load();
+                intensityTex->Load();
 
                 GLuint texId;
                 glGenTextures(1, &texId);
@@ -102,7 +106,7 @@ namespace OpenEngine {
                 glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
                 
                 GLuint colorDepth;
-                switch (image->GetColorFormat()) {
+                switch (intensityTex->GetColorFormat()) {
                 case LUMINANCE: colorDepth = GL_LUMINANCE; break;
                 case RGB: colorDepth = GL_RGB; break;
                 case RGBA: colorDepth = GL_RGBA; break;
@@ -112,9 +116,9 @@ namespace OpenEngine {
                 
                 glTexImage3D(GL_TEXTURE_3D, 0, colorDepth, 
                              width, height, depth,
-                             0, colorDepth, GL_FLOAT, image->GetData());
+                             0, colorDepth, GL_FLOAT, intensityTex->GetData());
 
-                image->SetID(texId);
+                intensityTex->SetID(texId);
 
                 glBindTexture(GL_TEXTURE_3D, 0);
             }

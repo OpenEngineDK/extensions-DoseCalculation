@@ -36,8 +36,9 @@ namespace OpenEngine {
             static const int TEXCOORDS = 3;
         
         private:
-            ITexture3DResourcePtr image;
-
+            ITexture3DResourcePtr intensityTex;
+            ITexture3DResourcePtr doseTex;
+                
             int width, height, depth;
             Vector<3, float> scale;
             int numberOfVertices;
@@ -60,7 +61,7 @@ namespace OpenEngine {
 
             // **** Get/Set ****
             
-            ITexture3DResourcePtr GetImage() const { return image; }
+            ITexture3DResourcePtr GetImage() const { return intensityTex; }
             unsigned int GetVerticeId() const { return verticeId; }
             unsigned int GetTexCoordId() const { return texCoordId; }
             int GetIndice(int x, int y, int z);
