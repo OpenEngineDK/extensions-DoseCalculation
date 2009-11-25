@@ -67,7 +67,7 @@ void MHDResource::Load() {
                 Error(line, "Invalid ElementSpacing");
         }
         else if (string(buf,11) == "ElementType") {
-            if (sscanf(buf, "ElementutType = %s ", tmp) != 1)
+            if (sscanf(buf, "ElementType = %s ", tmp) != 1)
                 Error(line, "Invalid ElementType");
             else {
                 if (string(tmp) == "MET_SHORT") {}
@@ -93,7 +93,6 @@ void MHDResource::Load() {
 	size_t count = fread (s_data, 2, dim_x * dim_y * dim_z, pFile);
     fclose(pFile);
     if (count != dim_x * dim_y * dim_z) throw new ResourceException("Raw file read error."); 
-    
     for(unsigned int i=0; i < dim_x * dim_y * dim_z; i++)
 		//data[i] = (float)s_data[i];
         data[i] = (((float)s_data[i]) + 1000.0f) / 2000.0f;
