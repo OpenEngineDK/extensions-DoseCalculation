@@ -159,7 +159,6 @@ namespace OpenEngine {
 
     }
 }
-
-BOOST_CLASS_EXPORT(OpenEngine::Resources::MHDResources)
+BOOST_CLASS_EXPORT(OpenEngine::Resources::TemplatedMHDResource<float>)
 
 #endif
