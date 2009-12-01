@@ -11,7 +11,7 @@
 #include <Meta/OpenGL.h>
 #include <Geometry/Ray.h>
 #include <Resources/EmptyTexture3DResource.h>
-#include <Resources/EmptyTextureResource.h>
+//#include <Resources/EmptyTextureResource.h>
 #include <Logging/Logger.h>
 
 using namespace OpenEngine::Geometry;
