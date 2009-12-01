@@ -1,4 +1,9 @@
 SET ( EXTENSION_NAME "Extensions_DoseCalculation")
+
+CUDA_ADD_LIBRARY("CUDA_KERNELS"
+  Renderers/CUDA/RayCaster.cu
+)
+
 # Create the extension library
 ADD_LIBRARY( ${EXTENSION_NAME}
   Renderers/OpenGL/DoseCalcRenderingView.h
@@ -23,5 +28,5 @@ TARGET_LINK_LIBRARIES( ${EXTENSION_NAME}
   ${OPENGL_LIBRARY}
   ${GLEW_LIBRARIES}
   ${SDL_LIBRARY}
-
+  "CUDA_KERNELS"
 )
