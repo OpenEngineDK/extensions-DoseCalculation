@@ -1,9 +1,15 @@
 SET ( EXTENSION_NAME "Extensions_DoseCalculation")
 # Create the extension library
 ADD_LIBRARY( ${EXTENSION_NAME}
+  Renderers/OpenGL/DoseCalcRenderingView.h
   Renderers/OpenGL/DoseCalcRenderingView.cpp
+  Renderers/OpenGL/RayCastRenderingView.h
+  Renderers/OpenGL/RayCastRenderingView.cpp
+  Scene/DoseCalcNode.h
   Scene/DoseCalcNode.cpp
+  Resources/MHDResource.h
   Resources/MHDResource.cpp
+  Resources/CopyTexture3DResource.h
   Resources/CopyTexture3DResource.cpp
 )
 
