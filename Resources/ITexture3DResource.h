@@ -31,20 +31,18 @@ namespace OpenEngine {
          *
          * @class Texture3DChangedEventArg ITexture3DResource.h Resource/ITexture3DResource.h
          */
-        /*
-        class Texture3DChangedEventArg {
+        class DeprTexture3DChangedEventArg {
         public:
-            Texture3DChangedEventArg(ITexture3DResourcePtr resource) : resource(resource) {}
+            DeprTexture3DChangedEventArg(ITexture3DResourcePtr resource) : resource(resource) {}
             ITexture3DResourcePtr resource;
         };
-        */
 
         /**
          * Texture resource interface.
          *
          * @class ITexture3DResource ITexture3DResource.h Resources/ITexture3DResource.h
          */
-        class ITexture3DResource : public IResource<Texture3DChangedEventArg> {
+        class ITexture3DResource : public IResource<DeprTexture3DChangedEventArg> {
         public:
             
             /**

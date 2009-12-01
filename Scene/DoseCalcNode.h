@@ -14,6 +14,7 @@
 #include <Core/IListener.h>
 #include <Renderers/IRenderer.h>
 #include <Resources/ITexture3DResource.h>
+#include <Resources/TemplatedMHDResource.h>
 #include <Resources/IShaderResource.h>
 #include <Widgets/Widgifier.h>
 
