@@ -10,7 +10,8 @@
 #include <Scene/DoseCalcNode.h>
 #include <Meta/OpenGL.h>
 #include <Geometry/Ray.h>
-#include <Resources/CopyTexture3DResource.h>
+#include <Resources/EmptyTexture3DResource.h>
+#include <Resources/EmptyTextureResource.h>
 #include <Logging/Logger.h>
 
 using namespace OpenEngine::Geometry;
@@ -32,8 +33,6 @@ namespace OpenEngine {
             vertices = texCoords = NULL;
             if (intensityTex != NULL){
                 intensityTex->Load();
-                doseTex = ITexture3DResourcePtr(new CopyTexture3DResource(intensityTex, RGB));
-                doseTex->Load();
                 width = intensityTex->GetWidth();
                 height = intensityTex->GetHeight();
                 depth = intensityTex->GetDepth();
@@ -45,7 +44,15 @@ namespace OpenEngine {
                 width = height = depth = 0;
                 scale = Vector<3, float>();
                 xPlaneCoord = yPlaneCoord = zPlaneCoord = 0;
-                doseTex = intensityTex;
+            }
+            doseTex = ITexture3DResourcePtr(new EmptyTexture3DResource(width, height, depth, RGB));
+            doseTex->Load();
+
+            float* data = doseTex->GetData();
+            for (int i = 0; i < numberOfVertices; ++i){
+                data[0] = 1.0f;
+                data[1] = 0.0f;
+                data[2] = 0.0f;
             }
 
             numberOfVertices = 12;
@@ -125,6 +132,49 @@ namespace OpenEngine {
 
                 glBindTexture(GL_TEXTURE_3D, 0);
             }
+
+            // allocate doseTex
+            doseTex->Load();
+            
+            GLuint texId;
+            glGenTextures(1, &texId);
+            glBindTexture(GL_TEXTURE_3D, texId);
+            glTexParameteri(GL_TEXTURE_3D,GL_TEXTURE_WRAP_S, GL_REPEAT);
+            glTexParameteri(GL_TEXTURE_3D,GL_TEXTURE_WRAP_T, GL_REPEAT);
+            glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+            
+            GLuint colorDepth;
+            switch (intensityTex->GetColorFormat()) {
+            case LUMINANCE: colorDepth = GL_LUMINANCE; break;
+            case RGB: colorDepth = GL_RGB; break;
+            case RGBA: colorDepth = GL_RGBA; break;
+            default:
+                colorDepth = GL_BGRA;
+            }
+
+            glTexImage3D(GL_TEXTURE_3D, 0, colorDepth, 
+                         width, height, depth,
+                         0, colorDepth, GL_FLOAT, NULL);
+            
+            doseTex->SetID(texId);
+
+            glBindTexture(GL_TEXTURE_3D, 0);
+            
+            // Setup shader
+            /*
+            if (shader != NULL){
+                shader->Load();
+
+                shader->ApplyShader();
+
+                //shader->SetTexture("intensityTex", intensityTex);
+                //shader->SetTexture("doseTex", doseTex);
+
+                shader->ReleaseShader();
+            }
+            */
 
             // print buffer objects
             /*

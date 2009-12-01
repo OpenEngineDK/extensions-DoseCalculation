@@ -21,9 +21,23 @@ namespace OpenEngine {
             //float widthScale, heightScale, depthScale;
             float* data;
             int id;
+            ColorFormat format;
         public:
-            EmptyTexture3DResource(unsigned int w, unsigned int h, unsigned int d, unsigned int cd) 
-                : width(w), height(h), depth(d), colorDepth(cd), data(NULL), id(0) {
+            EmptyTexture3DResource(unsigned int w, unsigned int h, unsigned int d, ColorFormat f) 
+                : width(w), height(h), depth(d), data(NULL), id(0), format(f) {
+                switch(format){
+                case LUMINANCE:
+                    colorDepth = 1;
+                    break;
+                case RGB:
+                case BGR:
+                    colorDepth = 3;
+                    break;
+                case RGBA:
+                case BGRA:
+                    colorDepth = 4;
+                    break;
+                }
             }
             ~EmptyTexture3DResource() {delete [] data; }
             void Load() { if (!data) data = new float[width * height * depth * colorDepth / 8]; }
@@ -33,19 +47,12 @@ namespace OpenEngine {
             unsigned int GetWidth() { return width; }            
             unsigned int GetHeight() { return height; }
             unsigned int GetDepth() { return depth; }
-            float GetWidthScale() const { return 1; }
-            float GetHeightScale() const { return 1; }
-            float GetDepthScale() const { return 1; }
+            float GetWidthScale() { return 1; }
+            float GetHeightScale() { return 1; }
+            float GetDepthScale() { return 1; }
             unsigned int GetColorDepth() { return colorDepth; }
             float* GetData() { return data; }
-            ColorFormat GetColorFormat() { 
-                switch (depth){
-                case 8: return LUMINANCE;
-                case 24: return RGB;
-                    //case 32: return RGBA;
-                default: return RGBA;
-                }
-            }
+            ColorFormat GetColorFormat() { return format; }
         };
 
     }

@@ -26,20 +26,26 @@ namespace OpenEngine {
             }
 
             void DoseCalcRenderingView::VisitDoseCalcNode(DoseCalcNode* node){
-                glEnable(GL_TEXTURE_3D);
-                
-                ITexture3DResourcePtr image = node->GetImage();
-                glBindTexture(GL_TEXTURE_3D, image->GetID());
-
                 glBindBuffer(GL_ARRAY_BUFFER, node->GetVerticeId());
                 glEnableClientState(GL_VERTEX_ARRAY);
                 glVertexPointer(DoseCalcNode::DIMENSIONS, GL_FLOAT, 0, 0);
+
+                // Setup textures
+                glEnable(GL_TEXTURE_3D);
+                glBindTexture(GL_TEXTURE_3D, node->GetIntensityTex()->GetID());
 
                 // Setup Texture coords
                 glBindBuffer(GL_ARRAY_BUFFER, node->GetTexCoordId());
                 glEnableClientState(GL_TEXTURE_COORD_ARRAY);
                 glTexCoordPointer(DoseCalcNode::TEXCOORDS, GL_FLOAT, 0, 0);
-                
+
+                /*
+                IShaderResourcePtr shader = node->GetShader();
+                if (shader){
+                    shader->ApplyShader();
+                }
+                */
+
                 // Render
                 {
                     glPushMatrix();
@@ -52,6 +58,12 @@ namespace OpenEngine {
                     
                     glPopMatrix();
                 }
+
+                /*
+                if (shader){
+                    shader->ReleaseShader();
+                }
+                */
 
                 glDisableClientState(GL_TEXTURE_COORD_ARRAY);
                 glDisableClientState(GL_VERTEX_ARRAY);

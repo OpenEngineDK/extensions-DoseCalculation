@@ -12,6 +12,7 @@
 
 #include <Resources/IResource.h>
 #include <Resources/ITextureResource.h>
+#include <Resources/ITexture3D.h>
 
 namespace OpenEngine {
     namespace Resources {
@@ -30,11 +31,13 @@ namespace OpenEngine {
          *
          * @class Texture3DChangedEventArg ITexture3DResource.h Resource/ITexture3DResource.h
          */
+        /*
         class Texture3DChangedEventArg {
         public:
             Texture3DChangedEventArg(ITexture3DResourcePtr resource) : resource(resource) {}
             ITexture3DResourcePtr resource;
         };
+        */
 
         /**
          * Texture resource interface.

@@ -14,6 +14,7 @@
 #include <Core/IListener.h>
 #include <Renderers/IRenderer.h>
 #include <Resources/ITexture3DResource.h>
+#include <Resources/IShaderResource.h>
 #include <Widgets/Widgifier.h>
 
 using namespace OpenEngine::Core;
@@ -49,6 +50,8 @@ namespace OpenEngine {
             unsigned int texCoordId;
 
             int xPlaneCoord, yPlaneCoord, zPlaneCoord;
+                
+            IShaderResourcePtr shader;
 
         public:
             DoseCalcNode();
@@ -61,21 +64,24 @@ namespace OpenEngine {
 
             // **** Get/Set ****
             
-            ITexture3DResourcePtr GetImage() const { return intensityTex; }
+            ITexture3DResourcePtr GetIntensityTex() const { return intensityTex; }
+            ITexture3DResourcePtr GetDoseTex() const { return doseTex; }
             unsigned int GetVerticeId() const { return verticeId; }
             unsigned int GetTexCoordId() const { return texCoordId; }
             int GetIndice(int x, int y, int z);
             int GetXPlaneCoord() const { return xPlaneCoord; }
             int GetYPlaneCoord() const { return yPlaneCoord; }
             int GetZPlaneCoord() const { return zPlaneCoord; }
+            
             float GetWidth() { return width * scale[0]; }
             float GetHeight() { return height * scale[1]; }
             float GetDepth() { return depth * scale[2]; }
             Vector<3, float> GetScale() const { return scale; }
-
+            IShaderResourcePtr GetShader() { return shader; }
             void SetXPlaneCoord(int x);
             void SetYPlaneCoord(int y);
             void SetZPlaneCoord(int z);
+            void SetShader(IShaderResourcePtr doseShader) { shader = doseShader; }
 
             void AddRay(Geometry::Ray* ray);
 
