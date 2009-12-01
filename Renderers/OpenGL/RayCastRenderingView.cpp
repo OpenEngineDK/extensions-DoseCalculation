@@ -30,7 +30,7 @@ namespace OpenEngine {
             }
 
             void RayCastRenderingView::VisitDoseCalcNode(DoseCalcNode* node){
-                int w = 480,h=480;
+                int w = node->GetWidth(),h=node->GetHeight();
                 if (!isSetup) {
                     ITexture3DResourcePtr tex = node->GetIntensityTex();
                                         // Make PBO
@@ -38,7 +38,10 @@ namespace OpenEngine {
 
                     glGenBuffers(1,&pbo);
                     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pbo);
-                    glBufferData(GL_PIXEL_UNPACK_BUFFER, w*h*sizeof(GLubyte)*4, 0, GL_STREAM_DRAW);
+                    glBufferData(GL_PIXEL_UNPACK_BUFFER, 
+                                 w*h*sizeof(GLubyte)*4,
+                                 0, 
+                                 GL_STREAM_DRAW);
 
                     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
 
