@@ -19,6 +19,9 @@ namespace OpenGL {
 using namespace OpenEngine::Renderers;
     
     class RayCastRenderingView : public RenderingView {
+
+        bool isSetup;
+        GLuint pbo;
     public:
         RayCastRenderingView(Viewport& viewport);
 
