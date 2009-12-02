@@ -10,7 +10,7 @@
 #include <Scene/DoseCalcNode.h>
 #include <Meta/OpenGL.h>
 #include <Geometry/Ray.h>
-#include <Resources/EmptyTexture3DResource.h>
+#include <Resources/Texture3D.h>
 #include <Logging/Logger.h>
 
 using namespace OpenEngine::Geometry;
@@ -44,7 +44,7 @@ namespace OpenEngine {
                 scale = Vector<3, float>();
                 xPlaneCoord = yPlaneCoord = zPlaneCoord = 0;
             }
-            doseTex = ITexture3DResourcePtr(new EmptyTexture3DResource(width, height, depth, RGB));
+            doseTex = ITexture3DPtr(float)(new Texture3D<float>(width, height, depth, OE_RGB));
             doseTex->Load();
 
             float* data = doseTex->GetData();

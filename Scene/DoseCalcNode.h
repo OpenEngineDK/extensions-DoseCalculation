@@ -13,7 +13,6 @@
 #include <Scene/ISceneNode.h>
 #include <Core/IListener.h>
 #include <Renderers/IRenderer.h>
-#include <Resources/ITexture3DResource.h>
 #include <Resources/TemplatedMHDResource.h>
 #include <Resources/IShaderResource.h>
 #include <Widgets/Widgifier.h>
@@ -39,7 +38,7 @@ namespace OpenEngine {
         
         private:
             MHDPtr(float) intensityTex;
-            ITexture3DResourcePtr doseTex;
+            ITexture3DPtr(float) doseTex;
                 
             int width, height, depth;
             Vector<3, float> scale;
@@ -66,7 +65,7 @@ namespace OpenEngine {
             // **** Get/Set ****
             
             ITexture3DPtr(float) GetIntensityTex() const { return intensityTex; }
-            ITexture3DResourcePtr GetDoseTex() const { return doseTex; }
+            ITexture3DPtr(float) GetDoseTex() const { return doseTex; }
             unsigned int GetVerticeId() const { return verticeId; }
             unsigned int GetTexCoordId() const { return texCoordId; }
             int GetIndice(int x, int y, int z);

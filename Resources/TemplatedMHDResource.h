@@ -128,7 +128,6 @@ namespace OpenEngine {
             float GetDepthScale() const { return space_z; }
 
             // Inherited virtual functions
-            unsigned char GetChannels() const { return 1; }
             void SetMipmapping(const bool mipmapping) { }
             bool UseMipmapping() const { return false; }
 

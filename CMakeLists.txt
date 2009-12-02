@@ -12,8 +12,6 @@ ADD_LIBRARY( ${EXTENSION_NAME}
   Renderers/OpenGL/RayCastRenderingView.cpp
   Scene/DoseCalcNode.h
   Scene/DoseCalcNode.cpp
-  Resources/MHDResource.h
-  Resources/MHDResource.cpp
 )
 
 TARGET_LINK_LIBRARIES( ${EXTENSION_NAME}
