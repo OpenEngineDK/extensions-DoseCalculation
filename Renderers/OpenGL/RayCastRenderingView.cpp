@@ -11,6 +11,7 @@
 
 #include <Scene/DoseCalcNode.h>
 #include <Resources/ITexture3DResource.h>
+#include <Resources/ITexture3D.h>
 #include <Logging/Logger.h>
 #include <Renderers/CUDA/RayCaster.h>
 #include <Meta/CUDA.h>
@@ -32,7 +33,7 @@ namespace OpenEngine {
             void RayCastRenderingView::VisitDoseCalcNode(DoseCalcNode* node){
                 int w = node->GetWidth(),h=node->GetHeight();
                 if (!isSetup) {
-                    ITexture3DResourcePtr tex = node->GetIntensityTex();
+                    ITexture3DPtr(float) tex = node->GetIntensityTex();
                                         // Make PBO
 
 

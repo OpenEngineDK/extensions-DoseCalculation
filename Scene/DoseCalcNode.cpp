@@ -11,7 +11,6 @@
 #include <Meta/OpenGL.h>
 #include <Geometry/Ray.h>
 #include <Resources/EmptyTexture3DResource.h>
-//#include <Resources/EmptyTextureResource.h>
 #include <Logging/Logger.h>
 
 using namespace OpenEngine::Geometry;
@@ -20,11 +19,11 @@ namespace OpenEngine {
     namespace Scene {
 
         DoseCalcNode::DoseCalcNode()
-            : intensityTex(ITexture3DResourcePtr()) {
+            : intensityTex(MHDPtr(float)()) {
             Init();
         }
 
-        DoseCalcNode::DoseCalcNode(ITexture3DResourcePtr i)
+        DoseCalcNode::DoseCalcNode(MHDPtr(float) i)
             : intensityTex(i){
             Init();
         }

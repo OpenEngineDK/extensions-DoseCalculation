@@ -140,25 +140,28 @@ namespace OpenEngine {
 
         };
 
+#define MHD(T) TemplatedMHDResource<T>
+#define MHDPtr(T) boost::shared_ptr<TemplatedMHDResource<T> >
+
         /**
          * MHD texture resource plug-in.
          *
          * @class TemplatedMHDResourcePlugin TemplatedMHDResource.h Resources/TemplatedMHDResource.h
          */
-        template <class T> class TemplatedMHDResourcePlugin : public IResourcePlugin<ITexture3D<T> > {
+        template <class T> class TemplatedMHDResourcePlugin : public IResourcePlugin<MHD(T) > {
         public:
             TemplatedMHDResourcePlugin(){
                 this->AddExtension("mhd");
             }
             
-            boost::shared_ptr<ITexture3D<T> > CreateResource(string file){
-            //ITexture3D<T>::Ptr CreateResource(string file){
-                return boost::shared_ptr<ITexture3D<T> >(new TemplatedMHDResource<T>(file));
+            MHDPtr(T) CreateResource(string file){
+                return MHDPtr(T)(new MHD(T)(file));
             }
         };
 
     }
 }
+
 BOOST_CLASS_EXPORT(OpenEngine::Resources::TemplatedMHDResource<float>)
 
 #endif

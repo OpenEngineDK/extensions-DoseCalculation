@@ -38,7 +38,7 @@ namespace OpenEngine {
             static const int TEXCOORDS = 3;
         
         private:
-            ITexture3DResourcePtr intensityTex;
+            MHDPtr(float) intensityTex;
             ITexture3DResourcePtr doseTex;
                 
             int width, height, depth;
@@ -56,7 +56,7 @@ namespace OpenEngine {
 
         public:
             DoseCalcNode();
-            DoseCalcNode(ITexture3DResourcePtr i);
+            DoseCalcNode(MHDPtr(float) i);
             ~DoseCalcNode();
 
             void VisitSubNodes(ISceneNodeVisitor& visitor);
@@ -65,7 +65,7 @@ namespace OpenEngine {
 
             // **** Get/Set ****
             
-            ITexture3DResourcePtr GetIntensityTex() const { return intensityTex; }
+            ITexture3DPtr(float) GetIntensityTex() const { return intensityTex; }
             ITexture3DResourcePtr GetDoseTex() const { return doseTex; }
             unsigned int GetVerticeId() const { return verticeId; }
             unsigned int GetTexCoordId() const { return texCoordId; }
