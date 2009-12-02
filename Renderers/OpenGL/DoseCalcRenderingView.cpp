@@ -10,7 +10,7 @@
 #include <Renderers/OpenGL/DoseCalcRenderingView.h>
 
 #include <Scene/DoseCalcNode.h>
-#include <Resources/ITexture3DResource.h>
+#include <Resources/ITexture3D.h>
 #include <Logging/Logger.h>
 
 using namespace OpenEngine::Scene;

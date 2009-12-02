@@ -10,7 +10,6 @@
 #include <Renderers/OpenGL/RayCastRenderingView.h>
 
 #include <Scene/DoseCalcNode.h>
-#include <Resources/ITexture3DResource.h>
 #include <Resources/ITexture3D.h>
 #include <Logging/Logger.h>
 #include <Renderers/CUDA/RayCaster.h>
