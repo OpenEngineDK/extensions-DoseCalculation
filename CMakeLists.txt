@@ -14,8 +14,6 @@ ADD_LIBRARY( ${EXTENSION_NAME}
   Scene/DoseCalcNode.cpp
   Resources/MHDResource.h
   Resources/MHDResource.cpp
-  Resources/CopyTexture3DResource.h
-  Resources/CopyTexture3DResource.cpp
 )
 
 TARGET_LINK_LIBRARIES( ${EXTENSION_NAME}
