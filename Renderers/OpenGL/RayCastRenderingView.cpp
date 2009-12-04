@@ -14,13 +14,17 @@
 #include <Logging/Logger.h>
 #include <Renderers/CUDA/RayCaster.h>
 #include <Meta/CUDA.h>
+#include <Display/IViewingVolume.h>
 
-using namespace OpenEngine::Scene;
-using namespace OpenEngine::Resources;
 
 namespace OpenEngine {
     namespace Renderers {
         namespace OpenGL {
+
+using namespace OpenEngine::Scene;
+using namespace OpenEngine::Resources;
+using namespace OpenEngine::Display;
+
 
             RayCastRenderingView::RayCastRenderingView(Viewport& viewport) :
                 IRenderingView(viewport),
@@ -54,7 +58,33 @@ namespace OpenEngine {
                     logger.info << "Ray Caster set up" << logger.end;
                     isSetup = true;
                 }
-                RenderToPBO(pbo,w,h);
+                
+
+                IViewingVolume *vol = GetViewport().GetViewingVolume();
+                Matrix<4,4,float> IV = vol->GetViewMatrix().GetInverse();
+                Matrix<4,4,float> pm = vol->GetProjectionMatrix();
+                float iva[16];
+                IV.Transpose();
+                IV.ToArray(iva);
+                // for (int i=0;i<16;i++)
+                //     logger.info << iva[i] << logger.end;
+                // float invViewMatrix[12];
+                // GLfloat modelView[16];
+                // glGetFloatv(GL_MODELVIEW_MATRIX, modelView);
+
+    
+                // invViewMatrix[0] = modelView[0]; invViewMatrix[1] = modelView[4]; invViewMatrix[2] = modelView[8]; invViewMatrix[3] = modelView[12];
+                // invViewMatrix[4] = modelView[1]; invViewMatrix[5] = modelView[5]; invViewMatrix[6] = modelView[9]; invViewMatrix[7] = modelView[13];
+                // invViewMatrix[8] = modelView[2]; invViewMatrix[9] = modelView[6]; invViewMatrix[10] = modelView[10]; invViewMatrix[11] = modelView[14];
+    
+    
+                float dx = node->GetWidth();
+                float dy = node->GetHeight();
+                float dz = node->GetDepth();
+                
+
+                RenderToPBO(pbo,w,h,iva,pm(0,0),pm(1,1),dx,dy,dz);
+ 
 
                 glMatrixMode(GL_MODELVIEW);
                 glLoadIdentity();
