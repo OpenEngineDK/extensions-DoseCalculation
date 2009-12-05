@@ -56,12 +56,6 @@ namespace OpenEngine {
 
             numberOfVertices = 12;
 
-            WIDGET_SLIDER(X, GetXPlaneCoord, SetXPlaneCoord, DoseCalcNode, int, 0, GetWidth);
-            WIDGET_CSLIDER(X, GetXPlaneCoord, SetXPlaneCoord, DoseCalcNode, int, 1);
-            WIDGET_SLIDER(Y, GetYPlaneCoord, SetYPlaneCoord, DoseCalcNode, int, 0, GetHeight);
-            WIDGET_CSLIDER(Y, GetYPlaneCoord, SetYPlaneCoord, DoseCalcNode, int, 1);
-            WIDGET_SLIDER(Z, GetZPlaneCoord, SetZPlaneCoord, DoseCalcNode, int, 0, GetDepth);
-            WIDGET_CSLIDER(Z, GetZPlaneCoord, SetZPlaneCoord, DoseCalcNode, int, 1);
         }
 
         DoseCalcNode::~DoseCalcNode(){

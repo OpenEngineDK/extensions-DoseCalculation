@@ -30,8 +30,6 @@ namespace OpenEngine {
         
         class DoseCalcNode : public ISceneNode, public IListener<RenderingEventArg>  {
             OE_SCENE_NODE(DoseCalcNode, ISceneNode)
-            WIDGET_INIT();
-
         public:
             static const int DIMENSIONS = 3;
             static const int TEXCOORDS = 3;
@@ -94,6 +92,14 @@ namespace OpenEngine {
             inline int GetIndex(int x, int y, int z);
         };
 
+        WIDGET_START(DoseCalcNode);
+        WIDGET_SLIDER(X, GetXPlaneCoord, SetXPlaneCoord, CONST, 0, OBJFUNC, GetIntensityTex()->GetWidth);
+        // WIDGET_CSLIDER(X, GetXPlaneCoord, SetXPlaneCoord, DoseCalcNode, int, 1);
+        WIDGET_SLIDER(Y, GetYPlaneCoord, SetYPlaneCoord, CONST, 0, OBJFUNC, GetIntensityTex()->GetHeight);
+        // WIDGET_CSLIDER(Y, GetYPlaneCoord, SetYPlaneCoord, DoseCalcNode, int, 1);
+        WIDGET_SLIDER(Z, GetZPlaneCoord, SetZPlaneCoord, CONST, 0, OBJFUNC, GetIntensityTex()->GetDepth);
+        // WIDGET_CSLIDER(Z, GetZPlaneCoord, SetZPlaneCoord, DoseCalcNode, int, 1);
+        WIDGET_STOP();
     }
 }
 
