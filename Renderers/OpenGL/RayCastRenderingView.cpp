@@ -34,7 +34,8 @@ using namespace OpenEngine::Display;
             }
 
             void RayCastRenderingView::VisitDoseCalcNode(DoseCalcNode* node){
-                int w = node->GetWidth(),h=node->GetHeight();
+                Vector<4,int> d = GetViewport().GetDimension();
+                int w = d[2], h = d[3];
                 if (!isSetup) {
                     ITexture3DPtr(float) tex = node->GetIntensityTex();
                                         // Make PBO
