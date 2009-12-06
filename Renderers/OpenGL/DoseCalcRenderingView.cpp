@@ -10,7 +10,10 @@
 #include <Renderers/OpenGL/DoseCalcRenderingView.h>
 
 #include <Scene/DoseCalcNode.h>
+#include <Scene/BeamNode.h>
 #include <Resources/ITexture3D.h>
+
+#include <Meta/OpenGL.h>
 #include <Logging/Logger.h>
 
 using namespace OpenEngine::Scene;
@@ -23,6 +26,51 @@ namespace OpenEngine {
             DoseCalcRenderingView::DoseCalcRenderingView(Viewport& viewport) : 
                 IRenderingView(viewport), 
                 RenderingView(viewport) {
+            }
+
+            void DoseCalcRenderingView::VisitBeamNode(BeamNode* node){
+                float dist = 1;
+                // GLUquadricObj* quad = gluNewQuadric();
+                // gluQuadricNormals(quad, GLU_SMOOTH);
+                // glPushMatrix();
+                // //Point downwards (-y)
+                // glRotatef(90,1.0,0.0,0.0);
+                // gluCylinder(quad, /*base*/3.0f, /*top*/3.0f, /*height*/dist-20.0, /*slices*/10, /*stacks*/10);
+                // glPushMatrix();
+                // glTranslatef(0,0,dist-20);
+                // gluCylinder(quad, /*base*/20.0f, /*top*/0.0f, /*height*/20.0f, /*slices*/10, /*stacks*/10);
+                // glPopMatrix();
+                // glPopMatrix();
+                // gluDeleteQuadric(quad);
+
+                glColor4f(0,1,0,1);
+                glEnable(GL_LINE_SMOOTH);
+                // draw beam surface
+                glLineWidth(1.0);
+                float wh = 0.5, hh = 0.5;
+                glBegin(GL_LINE_STRIP);
+                glVertex3f(-wh,-dist,-hh);
+                glVertex3f(-wh,-dist,hh);
+                glVertex3f(wh,-dist,hh);
+                glVertex3f(wh,-dist,-hh);
+                glVertex3f(-wh,-dist,-hh);
+                glEnd();
+            
+                // draw beam outlines
+                glBegin(GL_LINES);
+                glVertex3f(0.0,0.0,0.0);               
+                glVertex3f(-wh,-dist,-hh);
+                glVertex3f(0.0,0.0,0.0);               
+                glVertex3f(-wh,-dist,hh);
+                glVertex3f(0.0,0.0,0.0);               
+                glVertex3f(wh,-dist,hh);
+                glVertex3f(0.0,0.0,0.0);               
+                glVertex3f(wh,-dist,-hh);
+                glEnd();
+               
+                glDisable(GL_LINE_SMOOTH);
+                
+                node->VisitSubNodes(*this);
             }
 
             void DoseCalcRenderingView::VisitDoseCalcNode(DoseCalcNode* node){
@@ -71,9 +119,9 @@ namespace OpenEngine {
 
                 glDisable(GL_TEXTURE_3D);
                 glBindTexture(GL_TEXTURE_3D, 0);
-
+                
+                node->VisitSubNodes(*this);
             }
-
         }
     }
 }

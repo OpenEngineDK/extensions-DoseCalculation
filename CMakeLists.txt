@@ -6,12 +6,16 @@ CUDA_ADD_LIBRARY("CUDA_KERNELS"
 
 # Create the extension library
 ADD_LIBRARY( ${EXTENSION_NAME}
+  Renderers/OpenGL/DoseCalcSelectionRenderer.h
+  Renderers/OpenGL/DoseCalcSelectionRenderer.cpp
   Renderers/OpenGL/DoseCalcRenderingView.h
   Renderers/OpenGL/DoseCalcRenderingView.cpp
   Renderers/OpenGL/RayCastRenderingView.h
   Renderers/OpenGL/RayCastRenderingView.cpp
   Scene/DoseCalcNode.h
   Scene/DoseCalcNode.cpp
+  Scene/BeamNode.h
+  Scene/BeamNode.cpp
 )
 
 TARGET_LINK_LIBRARIES( ${EXTENSION_NAME}

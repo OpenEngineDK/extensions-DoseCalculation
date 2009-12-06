@@ -7,10 +7,10 @@
 // See the GNU General Public License for more details (see LICENSE). 
 //--------------------------------------------------------------------
 
-#ifndef _DOSE_CALC_RENDERING_VIEW_H_
-#define _DOSE_CALC_RENDERING_VIEW_H_
+#ifndef _DOSE_CALCULATION_SELECTION_RENDERER_H_
+#define _DOSE_CALCULATION_SELECTION_RENDERER_H_
 
-#include <Renderers/OpenGL/RenderingView.h>
+#include <Utils/GLSceneSelection.h>
 
 namespace OpenEngine {
     namespace Scene {
@@ -19,15 +19,11 @@ namespace OpenEngine {
 namespace Renderers {
 namespace OpenGL {
 
-using Renderers::OpenGL::RenderingView;
+using Utils::SelectionRenderer;
 using Scene::BeamNode;
 
-class DoseCalcRenderingView : public RenderingView {
+class DoseCalcSelectionRenderer : public SelectionRenderer {
 public:
-    DoseCalcRenderingView(Viewport& viewport);
-    
-    void VisitDoseCalcNode(DoseCalcNode* node);
-    
     void VisitBeamNode(BeamNode* node);
 };
 
