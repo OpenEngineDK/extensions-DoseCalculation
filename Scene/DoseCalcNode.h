@@ -29,9 +29,7 @@ namespace OpenEngine {
         using namespace Resources;
         using namespace Renderers;
         using namespace Widgets;
-
-class DoseCalcNode;
-
+        
         class DoseCalcNode : public ISceneNode, public IListener<RenderingEventArg>  {
             OE_SCENE_NODE(DoseCalcNode, ISceneNode)
         public:
@@ -39,6 +37,7 @@ class DoseCalcNode;
             static const int TEXCOORDS = 3;
                 
             vector<Beam> beams;        
+            GLuint dosePbo; // Will contain the deposited dose
         private:
             MHDPtr(float) intensityTex;
             ITexture3DPtr(float) doseTex;

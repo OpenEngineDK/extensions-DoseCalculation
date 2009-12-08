@@ -67,15 +67,7 @@ namespace OpenEngine {
         }
 
         void DoseCalcNode::CalculateDose(Beam beam, int beamlet_x, int beamlet_y) {
-            // if (dose_pbo == 0) {
-            //     glGenBuffers(1, &dose_pbo);
-            //     logger.info << "PBO: " << dose_pbo << logger.end;
-            //     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, dose_pbo);
-            //     glBufferData(GL_PIXEL_UNPACK_BUFFER,
-            //                  4 * width * height * depth,
-            //                  NULL, GL_STREAM_DRAW);
-            // }
-            SetupDoseCalc(dose_pbo, width, height, depth);
+            SetupDoseCalc(dosePbo, width, height, depth);
             logger.info << "SETUP" << logger.end;
             RunDoseCalc(dose_pbo, width, height, depth, beam, beamlet_x, beamlet_y, scale[0], scale[1], scale[2]);
             logger.info << "RUN" << logger.end;
@@ -144,37 +136,14 @@ namespace OpenEngine {
 
             }
 
-            /*
-            // allocate doseTex
-            doseTex->Load();
-            
-            GLuint texId;
-            glGenTextures(1, &texId);
-            glBindTexture(GL_TEXTURE_3D, texId);
-            glTexParameteri(GL_TEXTURE_3D,GL_TEXTURE_WRAP_S, GL_REPEAT);
-            glTexParameteri(GL_TEXTURE_3D,GL_TEXTURE_WRAP_T, GL_REPEAT);
-            glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-            glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-            // glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
-            
-            GLuint colorDepth;
-            switch (intensityTex->GetColorFormat()) {
-            case LUMINANCE: colorDepth = GL_LUMINANCE; break;
-            case RGB: colorDepth = GL_RGB; break;
-            case RGBA: colorDepth = GL_RGBA; break;
-            default:
-                colorDepth = GL_BGRA;
-            }
-
-            glTexImage3D(GL_TEXTURE_3D, 0, colorDepth, 
-                         width, height, depth,
-                         0, colorDepth, GL_FLOAT, NULL);
-            
-            doseTex->SetID(texId);
-
-            glBindTexture(GL_TEXTURE_3D, 0);
+            glGenBuffers(1, &dosePbo);
+            glBindBuffer(GL_PIXEL_UNPACK_BUFFER, dosePbo);
+            glBufferData(GL_PIXEL_UNPACK_BUFFER,
+                         sizeof(GLfloat) * numberOfVertices * 1,
+                         NULL, GL_STATIC_DRAW);
+            glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
             CHECK_FOR_GL_ERROR();
-            */
+
              // Setup shader
             /*
             if (shader != NULL){
