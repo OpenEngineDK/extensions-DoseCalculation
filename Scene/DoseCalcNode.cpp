@@ -135,6 +135,7 @@ namespace OpenEngine {
                 glBindTexture(GL_TEXTURE_3D, 0);
             }
 
+            /*
             // allocate doseTex
             doseTex->Load();
             
@@ -164,6 +165,7 @@ namespace OpenEngine {
 
             glBindTexture(GL_TEXTURE_3D, 0);
             CHECK_FOR_GL_ERROR();
+            */
              // Setup shader
             /*
             if (shader != NULL){
