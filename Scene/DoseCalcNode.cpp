@@ -69,7 +69,7 @@ namespace OpenEngine {
         void DoseCalcNode::CalculateDose(Beam beam, int beamlet_x, int beamlet_y) {
             SetupDoseCalc(dosePbo, width, height, depth);
             logger.info << "SETUP" << logger.end;
-            RunDoseCalc(dose_pbo, width, height, depth, beam, beamlet_x, beamlet_y, scale[0], scale[1], scale[2]);
+            RunDoseCalc(dose_pbo, beam, beamlet_x, beamlet_y, scale[0], scale[1], scale[2]);
             logger.info << "RUN" << logger.end;
         }
 

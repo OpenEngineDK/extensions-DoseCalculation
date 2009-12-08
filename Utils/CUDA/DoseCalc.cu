@@ -8,6 +8,7 @@
 #include <stdlib.h>
 
 typedef unsigned char uchar;
+typedef unsigned int  uint;
 
 texture<float, 3, cudaReadModeElementType> tex;
 uint3 dimensions; // should be placd in constant memory
@@ -42,13 +43,14 @@ __global__ void doseCalc(uint *d_output) {
 
 }
 
-void RunDoseCalc(GLuint pbo, int w, int h, int d, Beam beam, int beamlet_x, int beamlet_y, float dx, float dy, float dz) {
+void RunDoseCalc(GLuint pbo, Beam beam, int beamlet_x, int beamlet_y, float dx, float dy, float dz) {
     // Map the buffer object that we want to write the radiological depth to.
     float* radiologicalDepth;
     cudaGLMapBufferObject( (void**)&radiologicalDepth, pbo);
 
     dim3 blockDim(512,1,1);
-	dim3 gridDim((unsigned int)(ceil((double)(w*h*d)/blockDim.x)), 1, 1);
+    double entries = dimensions.x * dimensions.y * dimensions.z;
+	dim3 gridDim((uint)(ceil(entries/blockDim.x)), 1, 1);
 
     radioDepth<<< gridDim, blockDim >>>((float*) GetVolumeArray(), 
                                         radiologicalDepth, 
