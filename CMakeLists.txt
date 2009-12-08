@@ -3,6 +3,8 @@ SET ( EXTENSION_NAME "Extensions_DoseCalculation")
 CUDA_ADD_LIBRARY("CUDA_KERNELS"
   Renderers/CUDA/RayCaster.cu
   Utils/CUDA/DoseCalc.cu
+  Utils/CUDA/DozeSetup.cu
+
 )
 
 # Create the extension library

@@ -12,6 +12,8 @@
 #include <Logging/Logger.h>
 
 #include <Utils/CUDA/DoseCalc.h>
+#include <Utils/CUDA/Doze.h>
+
 
 using namespace OpenEngine::Geometry;
 
@@ -133,6 +135,13 @@ namespace OpenEngine {
                 intensityTex->SetID(texId);
 
                 glBindTexture(GL_TEXTURE_3D, 0);
+
+                // Upload to CUDA
+                SetupDoze(intensityTex->GetData(),
+                          intensityTex->GetWidth(),
+                          intensityTex->GetHeight(),
+                          intensityTex->GetDepth());
+
             }
 
             /*

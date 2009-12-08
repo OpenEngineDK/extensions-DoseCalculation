@@ -1,10 +1,9 @@
 #include "RayCaster.h"
+#include <Utils/CUDA/DozeCuda.h>
+
 #include <Meta/CUDA.h>
 
 typedef unsigned char uchar;
-
-texture<float, 3, cudaReadModeElementType> tex;
-cudaArray *d_volumeArray = 0;
 
 // typedef struct {
 //     float4 m[3];
@@ -48,7 +47,7 @@ struct Ray {
 
 __constant__ Matrix4x4 c_invViewMatrix;
 
-cudaExtent size;
+texture<float, 3, cudaReadModeElementType> tex;
 
 void SetupRayCaster(int pbo, const float* data, int w, int h, int d) {
     
@@ -58,23 +57,23 @@ void SetupRayCaster(int pbo, const float* data, int w, int h, int d) {
 
     cudaChannelFormatDesc channelDesc = cudaCreateChannelDesc<float>();
     
-    cudaExtent ext = make_cudaExtent(w,h,d);
-    size = ext;
+    /* cudaExtent ext = make_cudaExtent(w,h,d); */
+    /* size = ext; */
 
-    cudaMalloc3DArray(&d_volumeArray, &channelDesc, ext);
-    CHECK_FOR_CUDA_ERROR();
+    /* cudaMalloc3DArray(&d_volumeArray, &channelDesc, ext); */
+    /* CHECK_FOR_CUDA_ERROR(); */
 
-    cudaMemcpy3DParms copyParams = {0};
+    /* cudaMemcpy3DParms copyParams = {0}; */
     
-    copyParams.srcPtr = make_cudaPitchedPtr((void*)data, 
-                                            ext.width*sizeof(float),
-                                            ext.width,
-                                            ext.height);
-    copyParams.dstArray = d_volumeArray;
-    copyParams.extent = ext;
-    copyParams.kind = cudaMemcpyHostToDevice;
-    cudaMemcpy3D(&copyParams);
-    CHECK_FOR_CUDA_ERROR();
+    /* copyParams.srcPtr = make_cudaPitchedPtr((void*)data,  */
+    /*                                         ext.width*sizeof(float), */
+    /*                                         ext.width, */
+    /*                                         ext.height); */
+    /* copyParams.dstArray = d_volumeArray; */
+    /* copyParams.extent = ext; */
+    /* copyParams.kind = cudaMemcpyHostToDevice; */
+    /* cudaMemcpy3D(&copyParams); */
+    /* CHECK_FOR_CUDA_ERROR(); */
     
     tex.normalized = true;
     tex.filterMode = cudaFilterModeLinear;
@@ -82,9 +81,8 @@ void SetupRayCaster(int pbo, const float* data, int w, int h, int d) {
     tex.addressMode[1] = cudaAddressModeClamp;
     tex.addressMode[2] = cudaAddressModeClamp;
 
-    cudaBindTextureToArray(tex, d_volumeArray, channelDesc);
+    cudaBindTextureToArray(tex, GetVolumeArray(), channelDesc);
     CHECK_FOR_CUDA_ERROR();
-
 }
 
 __device__ uint rgbaFloatToInt(float4 rgba)
@@ -239,7 +237,7 @@ void RenderToPBO(int pbo, int width, int height, float* invMat, float pm00, floa
     
     const dim3 blockSize(16, 16, 1);
     const dim3 gridSize(width / blockSize.x, height / blockSize.y);
-
+    
     
     rayCaster<<<gridSize, blockSize>>>(p,width,height,1,1,1,1,pm00,pm11,make_float3(dx,dy,dz));
 
