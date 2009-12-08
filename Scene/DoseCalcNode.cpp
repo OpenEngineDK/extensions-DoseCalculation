@@ -65,14 +65,14 @@ namespace OpenEngine {
         }
 
         void DoseCalcNode::CalculateDose(Beam beam, int beamlet_x, int beamlet_y) {
-            if (dose_pbo == 0) {
-                glGenBuffers(1, &dose_pbo);
-                logger.info << "PBO: " << dose_pbo << logger.end;
-                glBindBuffer(GL_PIXEL_UNPACK_BUFFER, dose_pbo);
-                glBufferData(GL_PIXEL_UNPACK_BUFFER,
-                             4 * width * height * depth,
-                             NULL, GL_STREAM_DRAW);
-            }
+            // if (dose_pbo == 0) {
+            //     glGenBuffers(1, &dose_pbo);
+            //     logger.info << "PBO: " << dose_pbo << logger.end;
+            //     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, dose_pbo);
+            //     glBufferData(GL_PIXEL_UNPACK_BUFFER,
+            //                  4 * width * height * depth,
+            //                  NULL, GL_STREAM_DRAW);
+            // }
             SetupDoseCalc(dose_pbo, width, height, depth);
             logger.info << "SETUP" << logger.end;
             RunDoseCalc(dose_pbo, width, height, depth, beam, beamlet_x, beamlet_y, scale[0], scale[1], scale[2]);
