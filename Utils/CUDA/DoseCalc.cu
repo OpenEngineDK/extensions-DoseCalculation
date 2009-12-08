@@ -36,7 +36,8 @@ __global__ void radioDepth(float* input, float* output, uint3 dims) {
     // lookup via tex3D(...);
 
     uint3 coordinate = idx_to_co(idx, dims);
-    
+
+    output[idx] = (coordinate.x / dims.x + coordinate.y / dims.y + coordinate.z / dims.z) * 0.25f;
 }
 
 __global__ void doseCalc(uint *d_output) {
