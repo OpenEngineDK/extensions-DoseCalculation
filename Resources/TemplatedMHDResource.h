@@ -13,6 +13,7 @@
 
 #include <Resources/ITexture3D.h>
 #include <Resources/IResourcePlugin.h>
+#include <Resources/Exceptions.h>
 #include <Resources/File.h>
 #include <string>
 #include <iostream>
@@ -58,7 +59,9 @@ namespace OpenEngine {
             // resource methods
             void Load(){
                 // Return if data is already loaded.
-                if (ITexture<T>::data) return;
+                if (this->data) return;
+
+                logger.info << "Loading texture" << logger.end;
                 
                 string raw_dir = File::Parent(this->filename);
                 char buf[255], tmp[255];
@@ -98,28 +101,31 @@ namespace OpenEngine {
                 this->size = this->width * this->height * this->depth;
 
                 if (this->size == 0) 
-                    throw new ResourceException("Dimensions missing.");
+                    throw ResourceException("Dimensions missing.");
                 if (rawfile.empty()) 
-                    throw new ResourceException("Raw file missing.");
+                    throw ResourceException("Raw file missing.");
     
                 this->data = new float[this->size];
+                T* data = (T*) this->data;
                 short* s_data = new short[this->size];
                 FILE* pFile = fopen (rawfile.c_str(), "rb");
                 if (pFile == NULL) throw Exception("Raw file not found.");
                 size_t count = fread (s_data, 2, this->size, pFile);
                 fclose(pFile);
-                if (count != ITexture<T>::size) throw new ResourceException("Raw file read error."); 
+                if (count != this->size) throw new ResourceException("Raw file read error."); 
                 for(unsigned int i=0; i < this->size; i++)
                     //data[i] = (float)s_data[i];
-                    this->data[i] = (((T)s_data[i]) + 1000.0f) / 2000.0f;
+                    data[i] = (((T)s_data[i]) + 1000.0f) / 2000.0f;
                 delete [] s_data;
                 
                 this->format = OE_LUMINANCE;
             }
 
             void Unload(){
-                if (this->data) delete [] ITexture<T>::data;
-                ITexture3D<T>::width = ITexture3D<T>::height = ITexture3D<T>::depth = space_x = space_y = space_z = 0;
+                if (this->data) {
+                    T* data = (T*) this->data;
+                    delete [] data;
+                }
             }
 
             // texture resource methods
@@ -128,9 +134,7 @@ namespace OpenEngine {
             float GetDepthScale() const { return space_z; }
 
             // Inherited virtual functions
-            void SetMipmapping(const bool mipmapping) { }
             bool UseMipmapping() const { return false; }
-
 
             template<class Archive>
             void serialize(Archive& ar, const unsigned int version) {
