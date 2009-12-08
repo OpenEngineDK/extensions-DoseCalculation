@@ -1,5 +1,6 @@
-#include "DoseCalc.h"
 #include <Meta/CUDA.h>
+#include "DoseCalc.h"
+
 
 typedef unsigned char uchar;
 
