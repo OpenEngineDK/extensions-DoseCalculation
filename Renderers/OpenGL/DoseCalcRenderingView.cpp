@@ -29,51 +29,40 @@ namespace OpenEngine {
             }
 
             void DoseCalcRenderingView::VisitBeamNode(BeamNode* node){
-                float dist = 1;
-                // GLUquadricObj* quad = gluNewQuadric();
-                // gluQuadricNormals(quad, GLU_SMOOTH);
-                // glPushMatrix();
-                // //Point downwards (-y)
-                // glRotatef(90,1.0,0.0,0.0);
-                // gluCylinder(quad, /*base*/3.0f, /*top*/3.0f, /*height*/dist-20.0, /*slices*/10, /*stacks*/10);
-                // glPushMatrix();
-                // glTranslatef(0,0,dist-20);
-                // gluCylinder(quad, /*base*/20.0f, /*top*/0.0f, /*height*/20.0f, /*slices*/10, /*stacks*/10);
-                // glPopMatrix();
-                // glPopMatrix();
-                // gluDeleteQuadric(quad);
-
+                glDisable(GL_DEPTH_TEST);
                 glColor4f(0,1,0,1);
                 glEnable(GL_LINE_SMOOTH);
                 // draw beam surface
                 glLineWidth(1.0);
-                float wh = 0.5, hh = 0.5;
+                const float dist = 1.0;
+                const float wh = 0.5, hh = 0.5;
                 glBegin(GL_LINE_STRIP);
-                glVertex3f(-wh,-dist,-hh);
-                glVertex3f(-wh,-dist,hh);
-                glVertex3f(wh,-dist,hh);
-                glVertex3f(wh,-dist,-hh);
-                glVertex3f(-wh,-dist,-hh);
+                glVertex3f(-wh,0,-hh);
+                glVertex3f(-wh,0,hh);
+                glVertex3f(wh,0,hh);
+                glVertex3f(wh,0,-hh);
+                glVertex3f(-wh,0,-hh);
                 glEnd();
             
                 // draw beam outlines
                 glBegin(GL_LINES);
-                glVertex3f(0.0,0.0,0.0);               
-                glVertex3f(-wh,-dist,-hh);
-                glVertex3f(0.0,0.0,0.0);               
-                glVertex3f(-wh,-dist,hh);
-                glVertex3f(0.0,0.0,0.0);               
-                glVertex3f(wh,-dist,hh);
-                glVertex3f(0.0,0.0,0.0);               
-                glVertex3f(wh,-dist,-hh);
+                glVertex3f(0.0,dist,0.0);               
+                glVertex3f(-wh,0,-hh);
+                glVertex3f(0.0,dist,0.0);               
+                glVertex3f(-wh,0,hh);
+                glVertex3f(0.0,dist,0.0);               
+                glVertex3f(wh,0,hh);
+                glVertex3f(0.0,dist,0.0);               
+                glVertex3f(wh,0,-hh);
                 glEnd();
                
                 glDisable(GL_LINE_SMOOTH);
-                
+                glEnable(GL_DEPTH_TEST);
                 node->VisitSubNodes(*this);
             }
 
             void DoseCalcRenderingView::VisitDoseCalcNode(DoseCalcNode* node){
+                Vector<3,float> zero;
                 glBindBuffer(GL_ARRAY_BUFFER, node->GetVerticeId());
                 glEnableClientState(GL_VERTEX_ARRAY);
                 glVertexPointer(DoseCalcNode::DIMENSIONS, GL_FLOAT, 0, 0);

@@ -16,28 +16,33 @@
 #include <Resources/TemplatedMHDResource.h>
 #include <Resources/IShaderResource.h>
 #include <Widgets/Widgifier.h>
+#include <Scene/Beam.h>
+#include <Meta/OpenGL.h>
 
-using namespace OpenEngine::Core;
-using namespace OpenEngine::Resources;
-using namespace OpenEngine::Renderers;
-using namespace OpenEngine::Widgets;
+#include <vector>
+
+using std::vector;
 
 namespace OpenEngine {
-    namespace Geometry {
-        class Ray;
-    }
     namespace Scene {
-        
+        using namespace Core;
+        using namespace Resources;
+        using namespace Renderers;
+        using namespace Widgets;
+
+class DoseCalcNode;
+
         class DoseCalcNode : public ISceneNode, public IListener<RenderingEventArg>  {
             OE_SCENE_NODE(DoseCalcNode, ISceneNode)
         public:
             static const int DIMENSIONS = 3;
             static const int TEXCOORDS = 3;
-        
+                
+            vector<Beam> beams;        
         private:
             MHDPtr(float) intensityTex;
             ITexture3DPtr(float) doseTex;
-                
+            
             int width, height, depth;
             Vector<3, float> scale;
             int numberOfVertices;
@@ -51,12 +56,14 @@ namespace OpenEngine {
                 
             IShaderResourcePtr shader;
 
+            GLuint dose_pbo;
+
         public:
             DoseCalcNode();
             DoseCalcNode(MHDPtr(float) i);
             ~DoseCalcNode();
 
-            void VisitSubNodes(ISceneNodeVisitor& visitor);
+            // void VisitSubNodes(ISceneNodeVisitor& visitor);
 
             void Handle(RenderingEventArg arg);
 
@@ -81,8 +88,9 @@ namespace OpenEngine {
             void SetZPlaneCoord(int z);
             void SetShader(IShaderResourcePtr doseShader) { shader = doseShader; }
 
-            void AddRay(Geometry::Ray* ray);
-
+            void AddBeam(Beam beam);
+            void CalculateDose(Beam beam, int beamlet_x, int beamlet_y);
+ 
         private:
             inline void Init();
             inline void SetupVertices();

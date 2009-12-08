@@ -12,6 +12,7 @@
 
 #include <Scene/ISceneNode.h>
 #include <Renderers/IRenderer.h>
+#include <Scene/Beam.h>
 
 namespace OpenEngine {
     namespace Scene {
@@ -25,6 +26,8 @@ public:
     BeamNode(int beamlets_x, int beamlets_y);
     virtual ~BeamNode();
 
+    Beam GetBeam();
+
 private:
     friend class boost::serialization::access;
     template<class Archive>
@@ -37,4 +40,4 @@ private:
 } // NS Scene
 } // NS OpenEngine
 
-#endif //_DOSE_CALCULATION_RAY_GUN_NODE_H_
+#endif //_DOSE_CALCULATION_BEAM_NODE_H_

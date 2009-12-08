@@ -2,6 +2,7 @@ SET ( EXTENSION_NAME "Extensions_DoseCalculation")
 
 CUDA_ADD_LIBRARY("CUDA_KERNELS"
   Renderers/CUDA/RayCaster.cu
+  Utils/CUDA/DoseCalc.cu
 )
 
 # Create the extension library
@@ -16,6 +17,8 @@ ADD_LIBRARY( ${EXTENSION_NAME}
   Scene/DoseCalcNode.cpp
   Scene/BeamNode.h
   Scene/BeamNode.cpp
+  Scene/Beam.h
+  Scene/Beam.cpp
 )
 
 TARGET_LINK_LIBRARIES( ${EXTENSION_NAME}

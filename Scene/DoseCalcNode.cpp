@@ -8,10 +8,10 @@
 //--------------------------------------------------------------------
 
 #include <Scene/DoseCalcNode.h>
-#include <Meta/OpenGL.h>
-#include <Geometry/Ray.h>
 #include <Resources/Texture3D.h>
 #include <Logging/Logger.h>
+
+#include <Utils/CUDA/DoseCalc.h>
 
 using namespace OpenEngine::Geometry;
 
@@ -29,6 +29,7 @@ namespace OpenEngine {
         }
 
         void DoseCalcNode::Init(){
+            dose_pbo = 0;
             vertices = texCoords = NULL;
             if (intensityTex != NULL){
                 intensityTex->Load();
@@ -63,11 +64,19 @@ namespace OpenEngine {
             delete [] texCoords;
         }
 
-        void DoseCalcNode::VisitSubNodes(ISceneNodeVisitor& visitor){
-            std::list<ISceneNode*>::iterator itr;
-            for (itr = subNodes.begin(); itr != subNodes.end(); ++itr){
-                (*itr)->Accept(visitor);
+        void DoseCalcNode::CalculateDose(Beam beam, int beamlet_x, int beamlet_y) {
+            if (dose_pbo == 0) {
+                glGenBuffers(1, &dose_pbo);
+                logger.info << "PBO: " << dose_pbo << logger.end;
+                glBindBuffer(GL_PIXEL_UNPACK_BUFFER, dose_pbo);
+                glBufferData(GL_PIXEL_UNPACK_BUFFER,
+                             4 * width * height * depth,
+                             NULL, GL_STREAM_DRAW);
             }
+            SetupDoseCalc(dose_pbo, width, height, depth);
+            logger.info << "SETUP" << logger.end;
+            RunDoseCalc(dose_pbo, width, height, depth, beam, beamlet_x, beamlet_y, scale[0], scale[1], scale[2]);
+            logger.info << "RUN" << logger.end;
         }
 
         void DoseCalcNode::Handle(RenderingEventArg arg){
@@ -154,8 +163,8 @@ namespace OpenEngine {
             doseTex->SetID(texId);
 
             glBindTexture(GL_TEXTURE_3D, 0);
-            
-            // Setup shader
+            CHECK_FOR_GL_ERROR();
+             // Setup shader
             /*
             if (shader != NULL){
                 shader->Load();
@@ -227,8 +236,8 @@ namespace OpenEngine {
             SetupZPlane();
         }
 
-        void DoseCalcNode::AddRay(Ray* ray){
-
+        void DoseCalcNode::AddBeam(Beam beam){
+            beams.push_back(beam);
         }
 
         // *** inline methods ***

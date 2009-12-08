@@ -38,9 +38,7 @@ using namespace OpenEngine::Display;
                 int w = d[2], h = d[3];
                 if (!isSetup) {
                     ITexture3DPtr(float) tex = node->GetIntensityTex();
-                                        // Make PBO
-
-
+                    // Make PBO
                     glGenBuffers(1,&pbo);
                     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pbo);
                     glBufferData(GL_PIXEL_UNPACK_BUFFER, 
@@ -85,7 +83,6 @@ using namespace OpenEngine::Display;
                 
 
                 RenderToPBO(pbo,w,h,iva,pm(0,0),pm(1,1),dx,dy,dz);
- 
 
                 glMatrixMode(GL_MODELVIEW);
                 glLoadIdentity();

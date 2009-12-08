@@ -22,18 +22,35 @@ namespace OpenGL {
 void DoseCalcSelectionRenderer::VisitBeamNode(BeamNode* node){
     glPushName(count++);
     names.push_back(node);
-    GLUquadricObj* quad = gluNewQuadric();
-    gluQuadricNormals(quad, GLU_SMOOTH);
+    glDisable(GL_DEPTH_TEST);
     glColor4f(0,1,0,1);
-    glPushMatrix();
-    glRotatef(90,1.0,0.0,0.0);
-    gluCylinder(quad, /*base*/5.0f, /*top*/5.0f, /*height*/100.0f, /*slices*/10, /*stacks*/10);
-    glPushMatrix();
-    glTranslatef(0,0,100);
-    gluCylinder(quad, /*base*/20.0f, /*top*/0.0f, /*height*/20.0f, /*slices*/10, /*stacks*/10);
-    glPopMatrix();
-    glPopMatrix();
-    gluDeleteQuadric(quad);
+    glEnable(GL_LINE_SMOOTH);
+    // draw beam surface
+    glLineWidth(1.0);
+    const float dist = 1.0;
+    const float wh = 0.5, hh = 0.5;
+    glBegin(GL_LINE_STRIP);
+    glVertex3f(-wh,0,-hh);
+    glVertex3f(-wh,0,hh);
+    glVertex3f(wh,0,hh);
+    glVertex3f(wh,0,-hh);
+    glVertex3f(-wh,0,-hh);
+    glEnd();
+            
+    // draw beam outlines
+    glBegin(GL_LINES);
+    glVertex3f(0.0,-dist,0.0);               
+    glVertex3f(-wh,0,-hh);
+    glVertex3f(0.0,-dist,0.0);               
+    glVertex3f(-wh,0,hh);
+    glVertex3f(0.0,-dist,0.0);               
+    glVertex3f(wh,0,hh);
+    glVertex3f(0.0,-dist,0.0);               
+    glVertex3f(wh,0,-hh);
+    glEnd();
+               
+    glDisable(GL_LINE_SMOOTH);
+    glEnable(GL_DEPTH_TEST);
     node->VisitSubNodes(*this);
     CHECK_FOR_GL_ERROR();
     glPopName();
