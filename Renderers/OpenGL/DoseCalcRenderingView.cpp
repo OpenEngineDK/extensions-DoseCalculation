@@ -63,6 +63,8 @@ namespace OpenEngine {
 
             void DoseCalcRenderingView::VisitDoseCalcNode(DoseCalcNode* node){
                 Vector<3,float> zero;
+                // node->CalculateDose(Beam(zero, zero, zero, zero, zero), 1, 1);
+
                 glBindBuffer(GL_ARRAY_BUFFER, node->GetVerticeId());
                 glEnableClientState(GL_VERTEX_ARRAY);
                 glVertexPointer(DoseCalcNode::DIMENSIONS, GL_FLOAT, 0, 0);

@@ -55,8 +55,6 @@ namespace OpenEngine {
                 
             IShaderResourcePtr shader;
 
-            GLuint dose_pbo;
-
         public:
             DoseCalcNode();
             DoseCalcNode(MHDPtr(float) i);

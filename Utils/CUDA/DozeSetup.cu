@@ -1,5 +1,5 @@
 #include <Meta/CUDA.h>
-#include "DozeCuda.h"
+#include <Utils/CUDA/Doze.h>
 // Lets do Teh Setup!
 
 

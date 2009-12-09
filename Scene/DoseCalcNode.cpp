@@ -31,7 +31,6 @@ namespace OpenEngine {
         }
 
         void DoseCalcNode::Init(){
-            dose_pbo = 0;
             vertices = texCoords = NULL;
             if (intensityTex != NULL){
                 intensityTex->Load();
@@ -67,10 +66,8 @@ namespace OpenEngine {
         }
 
         void DoseCalcNode::CalculateDose(Beam beam, int beamlet_x, int beamlet_y) {
-            SetupDoseCalc(dosePbo, width, height, depth);
-            logger.info << "SETUP" << logger.end;
-            RunDoseCalc(dose_pbo, beam, beamlet_x, beamlet_y, scale[0], scale[1], scale[2]);
-            logger.info << "RUN" << logger.end;
+            RunDoseCalc(dosePbo, beam, beamlet_x, beamlet_y, scale[0], scale[1], scale[2]);
+            logger.info << "RUN DONE" << logger.end;
         }
 
         void DoseCalcNode::Handle(RenderingEventArg arg){
@@ -134,6 +131,8 @@ namespace OpenEngine {
                           intensityTex->GetHeight(),
                           intensityTex->GetDepth());
 
+                logger.info << "SETUP DONE" << logger.end;
+
             }
 
             glGenBuffers(1, &dosePbo);
@@ -144,6 +143,8 @@ namespace OpenEngine {
             glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
             CHECK_FOR_GL_ERROR();
 
+            SetupDoseCalc(dosePbo, width, height, depth);
+            
              // Setup shader
             /*
             if (shader != NULL){
