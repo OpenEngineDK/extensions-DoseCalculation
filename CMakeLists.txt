@@ -21,6 +21,7 @@ ADD_LIBRARY( ${EXTENSION_NAME}
   Scene/BeamNode.cpp
   Scene/Beam.h
   Scene/Beam.cpp
+  Utils/DoseTrigger.h
 )
 
 TARGET_LINK_LIBRARIES( ${EXTENSION_NAME}
