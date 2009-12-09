@@ -5,7 +5,6 @@
 
 cudaArray *d_volumeArray = 0;
 
-texture<float, 3, cudaReadModeElementType> tex;
 
 cudaArray* GetVolumeArray() {
     return d_volumeArray;
@@ -32,14 +31,14 @@ void SetupDoze(const float* data, int w, int h, int d) {
     cudaMemcpy3D(&copyParams);
     CHECK_FOR_CUDA_ERROR();
     
-    tex.normalized = true;
-    tex.filterMode = cudaFilterModeLinear;
-    tex.addressMode[0] = cudaAddressModeClamp;
-    tex.addressMode[1] = cudaAddressModeClamp;
-    tex.addressMode[2] = cudaAddressModeClamp;
+    /* tex.normalized = true; */
+    /* tex.filterMode = cudaFilterModeLinear; */
+    /* tex.addressMode[0] = cudaAddressModeClamp; */
+    /* tex.addressMode[1] = cudaAddressModeClamp; */
+    /* tex.addressMode[2] = cudaAddressModeClamp; */
 
-    cudaBindTextureToArray(tex, d_volumeArray, channelDesc);
-    CHECK_FOR_CUDA_ERROR();
+    /* cudaBindTextureToArray(tex, d_volumeArray, channelDesc); */
+    /* CHECK_FOR_CUDA_ERROR(); */
 
     printf("Doze Are SETUP!\n");
     

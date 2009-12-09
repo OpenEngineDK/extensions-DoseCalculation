@@ -145,7 +145,7 @@ namespace OpenEngine {
 
             SetupDoseCalc(dosePbo, width, height, depth);
             
-             // Setup shader
+            // Setup shader
             /*
             if (shader != NULL){
                 shader->Load();

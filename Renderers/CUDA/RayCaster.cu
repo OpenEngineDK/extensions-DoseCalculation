@@ -1,6 +1,6 @@
 #include "RayCaster.h"
 #include <Utils/CUDA/DozeCuda.h>
-
+#include <Utils/CUDA/uint_util.hcu>
 #include <Meta/CUDA.h>
 
 typedef unsigned char uchar;
@@ -49,31 +49,13 @@ __constant__ Matrix4x4 c_invViewMatrix;
 
 texture<float, 3, cudaReadModeElementType> tex;
 
-void SetupRayCaster(int pbo, const float* data, int w, int h, int d) {
+void SetupRayCaster(int pbo,  const float* data, int w, int h, int d) {
     
     cudaGLRegisterBufferObject(pbo);
     CHECK_FOR_CUDA_ERROR();
 
-
     cudaChannelFormatDesc channelDesc = cudaCreateChannelDesc<float>();
     
-    /* cudaExtent ext = make_cudaExtent(w,h,d); */
-    /* size = ext; */
-
-    /* cudaMalloc3DArray(&d_volumeArray, &channelDesc, ext); */
-    /* CHECK_FOR_CUDA_ERROR(); */
-
-    /* cudaMemcpy3DParms copyParams = {0}; */
-    
-    /* copyParams.srcPtr = make_cudaPitchedPtr((void*)data,  */
-    /*                                         ext.width*sizeof(float), */
-    /*                                         ext.width, */
-    /*                                         ext.height); */
-    /* copyParams.dstArray = d_volumeArray; */
-    /* copyParams.extent = ext; */
-    /* copyParams.kind = cudaMemcpyHostToDevice; */
-    /* cudaMemcpy3D(&copyParams); */
-    /* CHECK_FOR_CUDA_ERROR(); */
     
     tex.normalized = true;
     tex.filterMode = cudaFilterModeLinear;
@@ -155,7 +137,7 @@ __device__ float3 descale(float3 p, float3 d) {
     return r;
 }
 
-__global__ void rayCaster(uint *d_output, uint imageW, uint imageH,
+__global__ void rayCaster(uint *d_output, float* d_intense, uint imageW, uint imageH,
                           float density, float brightness,
                           float transferOffset, float transferScale,
                           float pm00, float pm11,
@@ -201,9 +183,17 @@ __global__ void rayCaster(uint *d_output, uint imageW, uint imageH,
                 pos.z > dd.z)
                 break;
             
+            uint3 posi = make_uint3(pos);
+            uint3 ddi = make_uint3(dd);
+
+            int idx = co_to_idx(posi, ddi);
+
+            float inte = d_intense[idx];
+
             float sample = tex3D(tex, pos.x, pos.y, pos.z);
             if (sample > 0.8f) {
                 col = make_float4(sample);
+                col.x = sample;
                 break;
             }
 
@@ -226,7 +216,7 @@ __global__ void rayCaster(uint *d_output, uint imageW, uint imageH,
     
 }
 
-void RenderToPBO(int pbo, int width, int height, float* invMat, float pm00, float pm11,float dx, float dy, float dz) {
+void RenderToPBO(int pbo, int pbo2, int width, int height, float* invMat, float pm00, float pm11,float dx, float dy, float dz) {
     cudaMemcpyToSymbol(c_invViewMatrix, invMat, sizeof(float4)*4);
     CHECK_FOR_CUDA_ERROR();
 
@@ -234,16 +224,23 @@ void RenderToPBO(int pbo, int width, int height, float* invMat, float pm00, floa
     uint* p;
     cudaGLMapBufferObject((void**)&p,pbo);
     CHECK_FOR_CUDA_ERROR();
+
+    float* p2;
+    cudaGLMapBufferObject((void**)&p2,pbo2);
+    CHECK_FOR_CUDA_ERROR();
+
     
     const dim3 blockSize(16, 16, 1);
     const dim3 gridSize(width / blockSize.x, height / blockSize.y);
+
+    //
     
-    
-    rayCaster<<<gridSize, blockSize>>>(p,width,height,1,1,1,1,pm00,pm11,make_float3(dx,dy,dz));
+    rayCaster<<<gridSize, blockSize>>>(p,p2,width,height,1,1,1,1,pm00,pm11,make_float3(dx,dy,dz));
 
     CHECK_FOR_CUDA_ERROR();
 
     cudaGLUnmapBufferObject(pbo);
+    cudaGLUnmapBufferObject(pbo2);
     CHECK_FOR_CUDA_ERROR();
 
 }

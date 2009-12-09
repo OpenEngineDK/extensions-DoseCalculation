@@ -12,7 +12,7 @@ typedef unsigned int  uint;
 texture<float, 3, cudaReadModeElementType> tex;
 uint3 dimensions; // should be placd in constant memory
 
-void SetupDoseCalc(GLuint pbo, int w, int h, int d) {
+void SetupDoseCalc(unsigned int pbo, int w, int h, int d) {
     cudaGLRegisterBufferObject(pbo);
     CHECK_FOR_CUDA_ERROR();
 
@@ -25,7 +25,9 @@ void SetupDoseCalc(GLuint pbo, int w, int h, int d) {
 
     cudaBindTextureToArray(tex, GetVolumeArray(), channelDesc);
 
-    /* CHECK_FOR_CUDA_ERROR(); */
+    printf("SetupDoseCalc done: %i\n",pbo);
+
+    CHECK_FOR_CUDA_ERROR();
     dimensions = make_uint3(w, h, d);
 
 }
@@ -44,7 +46,7 @@ __global__ void doseCalc(uint *d_output) {
 
 }
 
-void RunDoseCalc(GLuint pbo, Beam beam, int beamlet_x, int beamlet_y, float dx, float dy, float dz) {
+void RunDoseCalc(unsigned int pbo, Beam beam, int beamlet_x, int beamlet_y, float dx, float dy, float dz) {
     // Map the buffer object that we want to write the radiological depth to.
     float* radiologicalDepth;
     cudaGLMapBufferObject( (void**)&radiologicalDepth, pbo);
