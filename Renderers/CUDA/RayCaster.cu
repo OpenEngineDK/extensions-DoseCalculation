@@ -208,9 +208,11 @@ __global__ void rayCaster(uint *d_output, float* d_intense, uint imageW, uint im
     }
 
 
-    // Insert directly in loop instead of break. And can we really
-    // calculate it for coords outside the screen? If so then there
-    // should probably be a fix.
+    // Insert directly in loop instead of break.
+
+    // Make the size of the pbo big enough that we can't write outside
+    // it. W're doing the calculations anyways. Might as well discard
+    // them later and not slowdown every calculation.
 
     if ((x < imageW) && (y < imageH)) {
         // write output color

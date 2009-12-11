@@ -111,10 +111,12 @@ __device__ float GetRadiologicalDepth(uint3 coordinate, float3 source, uint3 dim
     return radiologicalDepth;
 }
 
-__global__ void radioDepth(float* output, uint3 dims, float3 scale, Beam beam) {
+__global__ void radioDepth(float* output, uint3 dims, float3 scale, float3 source) {
     const unsigned int idx = blockIdx.x*blockDim.x + threadIdx.x;
 
     uint3 coordinate = idx_to_co(idx, dims);
+
+    unsigned int rDepth = GetRadiologicalDepth(coordinate, source, dims, scale);
 
     output[idx] = (float(coordinate.x) / float(dims.x)); // + coordinate.y / dims.y + coordinate.z / dims.z) * 0.25f;
 }
@@ -124,17 +126,17 @@ __global__ void doseCalc(uint *d_output) {
 }
 
 void RunDoseCalc(float* cuDoseArr, Beam beam, int beamlet_x, int beamlet_y, float dx, float dy, float dz) {
-    // Map the buffer object that we want to write the radiological depth to.   
-   
+    float3 source = make_float3(beam.src[0], beam.src[1], beam.src[2]);
 
-    dim3 blockDim(512,1,1);
-    double entries = dimensions.x * dimensions.y * dimensions.z;
-	dim3 gridDim((uint)(ceil(entries/blockDim.x)), 1, 1);
+    const unsigned int blockDimX = 256;
+    dim3 blockDim(blockDimX,1,1);
+    float entries = dimensions.x * dimensions.y * dimensions.z;
+    dim3 gridDim(ceil(entries/(float)blockDimX), 1, 1);
 
-    radioDepth<<< gridDim, blockDim >>>(cuDoseArr, 
+    radioDepth<<< gridDim, blockDim >>>((float*)cuDoseArr, 
                                         dimensions,
                                         scale,
-                                        beam);
+                                        source);
     CHECK_FOR_CUDA_ERROR();
     printf("Hurray\n");
 
