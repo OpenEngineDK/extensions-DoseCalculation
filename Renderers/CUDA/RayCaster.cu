@@ -49,7 +49,12 @@ __constant__ Matrix4x4 c_invViewMatrix;
 
 texture<float, 3, cudaReadModeElementType> tex;
 
-void SetupRayCaster(int pbo,  const float* data, int w, int h, int d) {
+uint3 dimensions1;
+float3 scale1;
+
+void SetupRayCaster(int pbo,  const float* data,
+                    int w, int h, int d/*,
+                    float sw, float sh, float sd */) {
     
     cudaGLRegisterBufferObject(pbo);
     CHECK_FOR_CUDA_ERROR();
@@ -57,7 +62,7 @@ void SetupRayCaster(int pbo,  const float* data, int w, int h, int d) {
     cudaChannelFormatDesc channelDesc = cudaCreateChannelDesc<float>();
     
     
-    tex.normalized = true;
+    tex.normalized = false;
     tex.filterMode = cudaFilterModeLinear;
     tex.addressMode[0] = cudaAddressModeClamp;
     tex.addressMode[1] = cudaAddressModeClamp;
@@ -134,7 +139,7 @@ __global__ void rayCaster(uint *d_output, float* d_intense, uint imageW, uint im
                           float transferOffset, float transferScale,
                           float pm00, float pm11,
                           float3 dd) {
-    int maxD = 500;
+    int maxD = dd.z;
     float tStep = 1.0f;
     
     float4 col = make_float4(0.0f);
@@ -151,7 +156,7 @@ __global__ void rayCaster(uint *d_output, float* d_intense, uint imageW, uint im
     float tnear, tfar;
 	int hit = intersectBox(r, boxMin, boxMax, &tnear, &tfar);
         
-    float3 inversedd = make_float3(1.0f, 1.0f, 1.0f) / dd;
+    //float3 inversedd = make_float3(1.0f, 1.0f, 1.0f) / dd;
 
     if (hit) {
         if (tnear < 0.0f) tnear = 0.0f;     // clamp to near plane
@@ -163,26 +168,33 @@ __global__ void rayCaster(uint *d_output, float* d_intense, uint imageW, uint im
             float3 pos = r.origin + r.direction*t;
 
             // descale it
-            float3 spos = pos * inversedd;
-            pos = spos;
+            float3 spos = pos;// * inversedd;
+            //pos = spos;
 
-            if (pos.x < 0 ||
-                pos.y < 0 || 
-                pos.z < 0 ||
-                pos.x > dd.x ||
-                pos.y > dd.y ||
-                pos.z > dd.z)
+            if (pos.z < 0)                 
                 break;
+
+            /* if (pos.x < 0 || */
+            /*     pos.y < 0 || */
+            /*     pos.z < 0 || */
+            /*     pos.x > dd.x || */
+            /*     pos.y > dd.y */
+            /*     || pos.z > dd.z */
+            /*     ) { */
+            /*     col = make_float4(pos); */
+            /*     break; */
+            /* } */
                                              
 
             float sample = tex3D(tex, spos.x, spos.y, spos.z);
             if (sample > 0.8f) {
+                float inte = 0.0f;
                 uint3 posi = make_uint3(pos);
                 uint3 ddi = make_uint3(dd);
                 int idx = co_to_idx(posi, ddi);
-                float inte = 0.0f;
+                
 
-                if (idx < dd.x*dd.y*dd.z)  
+                if (idx < dd.x*dd.y*dd.z)
                     inte = d_intense[idx];
                 
                 
