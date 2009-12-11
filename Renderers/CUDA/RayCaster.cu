@@ -129,14 +129,6 @@ __device__ Ray RayForPoint(uint u, uint v, uint width, uint height,float pm00, f
     return rr;
 }
 
-__device__ float3 descale(float3 p, float3 d) {
-    float3 r = p;
-    r.x = r.x / d.x;
-    r.y = r.y / d.y;
-    r.z = r.z / d.z;
-    return r;
-}
-
 __global__ void rayCaster(uint *d_output, float* d_intense, uint imageW, uint imageH,
                           float density, float brightness,
                           float transferOffset, float transferScale,
@@ -165,6 +157,8 @@ __global__ void rayCaster(uint *d_output, float* d_intense, uint imageW, uint im
 
     col = make_float4(0.0f);
         
+    float3 inversedd = make_float3(1.0f, 1.0f, 1.0f) / dd;
+
     if (hit) {
         if (tnear < 0.0f) tnear = 0.0f;     // clamp to near plane
 
@@ -173,7 +167,7 @@ __global__ void rayCaster(uint *d_output, float* d_intense, uint imageW, uint im
         for (int i=0;i<maxD;i++) {
             float3 pos = r.origin + r.direction*t;
             // descale it
-            pos = descale(pos,dd);
+            pos = pos * inversedd;
 
             if (pos.x < 0 ||
                 pos.y < 0 || 
