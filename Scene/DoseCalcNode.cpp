@@ -66,7 +66,7 @@ namespace OpenEngine {
         }
 
         void DoseCalcNode::CalculateDose(Beam beam, int beamlet_x, int beamlet_y) {
-            RunDoseCalc(dosePbo, beam, beamlet_x, beamlet_y, scale[0], scale[1], scale[2]);
+            RunDoseCalc(cuDoseArr, beam, beamlet_x, beamlet_y, scale[0], scale[1], scale[2]);
             logger.info << "RUN DONE" << logger.end;
         }
 
@@ -135,15 +135,15 @@ namespace OpenEngine {
 
             }
 
-            glGenBuffers(1, &dosePbo);
-            glBindBuffer(GL_PIXEL_UNPACK_BUFFER, dosePbo);
-            glBufferData(GL_PIXEL_UNPACK_BUFFER,
-                         sizeof(GLfloat) * numberOfVertices * 1,
-                         NULL, GL_STATIC_DRAW);
-            glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
-            CHECK_FOR_GL_ERROR();
+            // glGenBuffers(1, &dosePbo);
+            // glBindBuffer(GL_ARRAY_BUFFER, dosePbo);
+            // glBufferData(GL_ARRAY_BUFFER,
+            //              sizeof(GLfloat) * width * height * depth,
+            //              NULL, GL_DYNAMIC_DRAW);
+            // glBindBuffer(GL_ARRAY_BUFFER, 0);
+            // CHECK_FOR_GL_ERROR();
 
-            SetupDoseCalc(dosePbo, 
+            SetupDoseCalc(&cuDoseArr, 
                           width, height, depth,
                           scale[0], scale[1], scale[2]);
             

@@ -159,9 +159,12 @@ __global__ void rayCaster(uint *d_output, float* d_intense, uint imageW, uint im
         float t = tnear;
         
         for (int i=0;i<maxD;i++) {
+            
             float3 pos = r.origin + r.direction*t;
+
             // descale it
-            pos = pos * inversedd;
+            float3 spos = pos * inversedd;
+            pos = spos;
 
             if (pos.x < 0 ||
                 pos.y < 0 || 
@@ -170,18 +173,21 @@ __global__ void rayCaster(uint *d_output, float* d_intense, uint imageW, uint im
                 pos.y > dd.y ||
                 pos.z > dd.z)
                 break;
-            
-            uint3 posi = make_uint3(pos);
-            uint3 ddi = make_uint3(dd);
+                                             
 
-            int idx = co_to_idx(posi, ddi);
-
-            float inte = d_intense[idx];
-
-            float sample = tex3D(tex, pos.x, pos.y, pos.z);
+            float sample = tex3D(tex, spos.x, spos.y, spos.z);
             if (sample > 0.8f) {
+                uint3 posi = make_uint3(pos);
+                uint3 ddi = make_uint3(dd);
+                int idx = co_to_idx(posi, ddi);
+                float inte = 0.0f;
+
+                if (idx < dd.x*dd.y*dd.z)  
+                    inte = d_intense[idx];
+                
+                
                 col = make_float4(sample);
-                col.x = sample;
+                col.x = inte;
                 break;
             }
 
@@ -190,13 +196,10 @@ __global__ void rayCaster(uint *d_output, float* d_intense, uint imageW, uint im
     }
 
 
-
-    
-    
-
     // Insert directly in loop instead of break. And can we really
     // calculate it for coords outside the screen? If so then there
     // should probably be a fix.
+
     if ((x < imageW) && (y < imageH)) {
         // write output color
         uint i = __umul24(y, imageW) + x;
@@ -206,7 +209,7 @@ __global__ void rayCaster(uint *d_output, float* d_intense, uint imageW, uint im
     
 }
 
-void RenderToPBO(int pbo, int pbo2, int width, int height, float* invMat, float pm00, float pm11,float dx, float dy, float dz) {
+void RenderToPBO(int pbo, float* cuDoseArr, int width, int height, float* invMat, float pm00, float pm11,float dx, float dy, float dz) {
     cudaMemcpyToSymbol(c_invViewMatrix, invMat, sizeof(float4)*4);
     CHECK_FOR_CUDA_ERROR();
 
@@ -215,22 +218,19 @@ void RenderToPBO(int pbo, int pbo2, int width, int height, float* invMat, float 
     cudaGLMapBufferObject((void**)&p,pbo);
     CHECK_FOR_CUDA_ERROR();
 
-    float* p2;
-    cudaGLMapBufferObject((void**)&p2,pbo2);
-    CHECK_FOR_CUDA_ERROR();
 
     
     const dim3 blockSize(16, 16, 1);
     const dim3 gridSize(width / blockSize.x, height / blockSize.y);
 
     //
-    
-    rayCaster<<<gridSize, blockSize>>>(p,p2,width,height,1,1,1,1,pm00,pm11,make_float3(dx,dy,dz));
+    //printf("cast: %f,%f,%f\n",dx,dy,dz);
+    rayCaster<<<gridSize, blockSize>>>(p,cuDoseArr,width,height,1,1,1,1,pm00,pm11,make_float3(dx,dy,dz));
 
     CHECK_FOR_CUDA_ERROR();
 
     cudaGLUnmapBufferObject(pbo);
-    cudaGLUnmapBufferObject(pbo2);
+
     CHECK_FOR_CUDA_ERROR();
 
 }

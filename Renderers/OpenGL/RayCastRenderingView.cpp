@@ -67,12 +67,12 @@ using namespace OpenEngine::Display;
                 IV.ToArray(iva);
     
     
-                float dx = node->GetWidth();
-                float dy = node->GetHeight();
-                float dz = node->GetDepth();
+                float dx = node->GetDoseTex()->GetWidth();
+                float dy = node->GetDoseTex()->GetHeight();
+                float dz = node->GetDoseTex()->GetDepth();
                 
                 
-                RenderToPBO(pbo,node->dosePbo,w,h,iva,pm(0,0),pm(1,1),dx,dy,dz);
+                RenderToPBO(pbo,node->cuDoseArr,w,h,iva,pm(0,0),pm(1,1),dx,dy,dz);
 
                 glMatrixMode(GL_MODELVIEW);
                 glLoadIdentity();

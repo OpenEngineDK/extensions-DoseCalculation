@@ -13,12 +13,15 @@ texture<float, 3, cudaReadModeElementType> tex;
 uint3 dimensions; // should be placd in constant memory
 float3 scale; // should be placed in constant memory
 
-void SetupDoseCalc(unsigned int pbo, 
+void SetupDoseCalc(float** cuDoseArr, 
                    int w, int h, int d, // dimensions
                    float sw, float sh, float sd) // scale
 { 
-    cudaGLRegisterBufferObject(pbo);
+    
+    cudaMalloc((void**)cuDoseArr, sizeof(float)*w*h*d);
     CHECK_FOR_CUDA_ERROR();
+
+    printf("malloc: %d,%d,%d\n",w,h,d);
 
     cudaChannelFormatDesc channelDesc = cudaCreateChannelDesc<float>();
     tex.normalized = true;
@@ -29,7 +32,7 @@ void SetupDoseCalc(unsigned int pbo,
 
     cudaBindTextureToArray(tex, GetVolumeArray(), channelDesc);
 
-    printf("SetupDoseCalc done: %i\n",pbo);
+    printf("SetupDoseCalc done\n");
 
     CHECK_FOR_CUDA_ERROR();
     dimensions = make_uint3(w, h, d);
@@ -116,27 +119,27 @@ __global__ void radioDepth(float* output, uint3 dims, float3 scale, Beam beam) {
     // lookup via tex3D(...);
 
     uint3 coordinate = idx_to_co(idx, dims);
-
-    output[idx] = (coordinate.x / dims.x + coordinate.y / dims.y + coordinate.z / dims.z) * 0.25f;
+    //if (idx < (dims.x * dims.y * dims.z))
+    output[idx] = (float(coordinate.x) / float(dims.x)); // + coordinate.y / dims.y + coordinate.z / dims.z) * 0.25f;
 }
 
 __global__ void doseCalc(uint *d_output) {
 
 }
 
-void RunDoseCalc(unsigned int pbo, Beam beam, int beamlet_x, int beamlet_y, float dx, float dy, float dz) {
-    // Map the buffer object that we want to write the radiological depth to.
-    float* radiologicalDepth;
-    cudaGLMapBufferObject( (void**)&radiologicalDepth, pbo);
+void RunDoseCalc(float* cuDoseArr, Beam beam, int beamlet_x, int beamlet_y, float dx, float dy, float dz) {
+    // Map the buffer object that we want to write the radiological depth to.   
+   
 
     dim3 blockDim(512,1,1);
     double entries = dimensions.x * dimensions.y * dimensions.z;
 	dim3 gridDim((uint)(ceil(entries/blockDim.x)), 1, 1);
 
-    radioDepth<<< gridDim, blockDim >>>(radiologicalDepth, 
+    radioDepth<<< gridDim, blockDim >>>(cuDoseArr, 
                                         dimensions,
                                         scale,
                                         beam);
+    CHECK_FOR_CUDA_ERROR();
+    printf("Hurray\n");
 
-    cudaGLUnmapBufferObject(pbo);    
 }

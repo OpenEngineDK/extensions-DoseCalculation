@@ -38,6 +38,7 @@ namespace OpenEngine {
                 
             vector<Beam> beams;        
             GLuint dosePbo; // Will contain the deposited dose
+            float* cuDoseArr;
         private:
             MHDPtr(float) intensityTex;
             ITexture3DPtr(float) doseTex;
