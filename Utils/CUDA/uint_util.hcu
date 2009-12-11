@@ -10,6 +10,8 @@
 
 #include <vector_functions.h>
 
+// *** OWN ADDITIONS ***
+
 inline __host__ __device__ float3 operator -(float3 f3, uint3 u3){
     return make_float3(f3.x - u3.x, f3.y - u3.y, f3.z - u3.z);
 }
@@ -108,10 +110,11 @@ inline __host__ __device__ uint2 idx_to_co(unsigned int idx, uint2 dim)
 inline __host__ __device__ uint3 idx_to_co(unsigned int idx, uint3 dim)
 {
   uint3 co;
-  unsigned int temp = idx;
-  co.x = temp%dim.x;temp -= co.x;
-  co.y = (temp/(dim.x))%dim.y; temp -= co.y*dim.x;
-  co.z = temp/(dim.x*dim.y);
+  co.x = idx % dim.x;
+  idx -= co.x;
+  idx /= dim.x;
+  co.y = idx % dim.y; 
+  co.z = (idx - co.y) / dim.y;
   return co;
 }
 

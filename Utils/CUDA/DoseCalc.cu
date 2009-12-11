@@ -39,7 +39,7 @@ void SetupDoseCalc(float** cuDoseArr,
     scale = make_float3(sw, sh, sd);
 }
 
-__device__ float GetRadiologicalDepth(float3 coordinate, float3 source, float3 dimensions, float3 scale){
+__device__ float GetRadiologicalDepth(float3 coordinate, float3 source, uint3 dimensions, float3 scale){
     // The vector from the coordinate to the source
     float3 vec = source - coordinate;
 
@@ -53,7 +53,9 @@ __device__ float GetRadiologicalDepth(float3 coordinate, float3 source, float3 d
     // zy-planes.
     float3 delta = dist * scale / vec;
 
-    float3 texDelta = make_float3(1.0f, 1.0f, 1.0f) / dimensions;
+    float3 texDelta = make_float3(1.0f / (float)dimensions.x, 
+                                  1.0f / (float)dimensions.y, 
+                                  1.0f / (float)dimensions.z);
 
     float3 texCoord = coordinate * texDelta;
 
@@ -116,10 +118,8 @@ __device__ float GetRadiologicalDepth(float3 coordinate, float3 source, float3 d
 __global__ void radioDepth(float* output, uint3 dims, float3 scale, Beam beam) {
     const unsigned int idx = blockIdx.x*blockDim.x + threadIdx.x;
 
-    // lookup via tex3D(...);
-
     uint3 coordinate = idx_to_co(idx, dims);
-    //if (idx < (dims.x * dims.y * dims.z))
+
     output[idx] = (float(coordinate.x) / float(dims.x)); // + coordinate.y / dims.y + coordinate.z / dims.z) * 0.25f;
 }
 
