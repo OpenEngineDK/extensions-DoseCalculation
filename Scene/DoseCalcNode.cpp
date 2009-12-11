@@ -143,7 +143,9 @@ namespace OpenEngine {
             glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
             CHECK_FOR_GL_ERROR();
 
-            SetupDoseCalc(dosePbo, width, height, depth);
+            SetupDoseCalc(dosePbo, 
+                          width, height, depth,
+                          scale[0], scale[1], scale[2]);
             
             // Setup shader
             /*
