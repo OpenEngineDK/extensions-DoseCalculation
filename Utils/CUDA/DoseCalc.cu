@@ -36,7 +36,7 @@ void SetupDoseCalc(unsigned int pbo,
     scale = make_float3(sw, sh, sd);
 }
 
-__device__ unsigned int GetRadiologicalDepth(float3 coordinate, float3 source, float3 dimensions, float3 scale){
+__device__ float GetRadiologicalDepth(float3 coordinate, float3 source, float3 dimensions, float3 scale){
     // The vector from the coordinate to the source
     float3 vec = source - coordinate;
 
@@ -50,7 +50,13 @@ __device__ unsigned int GetRadiologicalDepth(float3 coordinate, float3 source, f
     // zy-planes.
     float3 delta = dist * scale / vec;
 
-    float3 texCoords = coordinate / dimensions;
+    float3 texDelta = make_float3(1.0f, 1.0f, 1.0f) / dimensions;
+
+    float3 texCoord = coordinate * texDelta;
+
+    texDelta.x = (vec.x > 0) ? texDelta.x : -texDelta.x;
+    texDelta.y = (vec.y > 0) ? texDelta.y : -texDelta.y;
+    texDelta.z = (vec.z > 0) ? texDelta.z : -texDelta.z;
 
     // The border texcoords (@TODO: Doesn't have to be calculated for
     // every voxel, move outside later.)
@@ -59,15 +65,49 @@ __device__ unsigned int GetRadiologicalDepth(float3 coordinate, float3 source, f
                                 (vec.z > 0) ? 1 : 0);
 
     // The remaining distance to the next crossing.
-    float3 alpha;
+    float3 alpha = delta;
 
-    while (alpha.x != border.x ||
-           alpha.y != border.y ||
-           alpha.z != border.z){
-        
+    float radiologicalDepth = 0;
+    while (texCoord.x != border.x ||
+           texCoord.y != border.y ||
+           texCoord.z != border.z){
+
+        // Replace float3 with float[3] so we only need to branch for
+        // the index and can then do the calculations?
+        float alphaInc;
+        if (alpha.x < alpha.y){
+            if (alpha.x < alpha.z) {
+                // x is smallest
+                alphaInc = alpha.x;
+                alpha.x += delta.x;
+                texCoord.x += texDelta.x;
+            } else {
+                // z is smalles
+                alphaInc = alpha.z;
+                alpha.z += delta.z;
+                texCoord.z += texDelta.z;
+            }
+        }else{
+            if (alpha.y < alpha.z) {
+                // y is smallest
+                alphaInc = alpha.y;
+                alpha.y += delta.y;
+                texCoord.y += texDelta.y;                
+            } else {
+                // z is smalles
+                alphaInc = alpha.z;
+                alpha.z += delta.z;
+                texCoord.z += texDelta.z;
+            }
+        }
+        alpha.x -= alphaInc;
+        alpha.y -= alphaInc;
+        alpha.z -= alphaInc;
+
+        radiologicalDepth += tex3D(tex, texCoord.x, texCoord.y, texCoord.z);
     }
 
-    return 0;
+    return radiologicalDepth;
 }
 
 __global__ void radioDepth(float* output, uint3 dims, float3 scale, Beam beam) {
