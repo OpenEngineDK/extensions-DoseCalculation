@@ -24,7 +24,6 @@ void SetupDoseCalc(float** cuDoseArr,
     printf("malloc: %d,%d,%d\n",w,h,d);
 
     cudaChannelFormatDesc channelDesc = cudaCreateChannelDesc<float>();
-    tex.normalized = true;
     tex.filterMode = cudaFilterModeLinear;
     tex.addressMode[0] = cudaAddressModeClamp;
     tex.addressMode[1] = cudaAddressModeClamp;
@@ -39,7 +38,7 @@ void SetupDoseCalc(float** cuDoseArr,
     scale = make_float3(sw, sh, sd);
 }
 
-__device__ float GetRadiologicalDepth(float3 coordinate, float3 source, uint3 dimensions, float3 scale){
+__device__ float GetRadiologicalDepth(uint3 coordinate, float3 source, uint3 dimensions, float3 scale){
     // The vector from the coordinate to the source
     float3 vec = source - coordinate;
 
@@ -52,22 +51,19 @@ __device__ float GetRadiologicalDepth(float3 coordinate, float3 source, uint3 di
     // delta.x is the distance the beam has to travel between crossing
     // zy-planes.
     float3 delta = dist * scale / vec;
+    
+    uint3 texCoord = coordinate;
 
-    float3 texDelta = make_float3(1.0f / (float)dimensions.x, 
-                                  1.0f / (float)dimensions.y, 
-                                  1.0f / (float)dimensions.z);
-
-    float3 texCoord = coordinate * texDelta;
-
-    texDelta.x = (vec.x > 0) ? texDelta.x : -texDelta.x;
-    texDelta.y = (vec.y > 0) ? texDelta.y : -texDelta.y;
-    texDelta.z = (vec.z > 0) ? texDelta.z : -texDelta.z;
+    int3 texDelta;
+    texDelta.x = (vec.x > 0) ? 1 : -1;
+    texDelta.y = (vec.y > 0) ? 1 : -1;
+    texDelta.z = (vec.z > 0) ? 1 : -1;
 
     // The border texcoords (@TODO: Doesn't have to be calculated for
     // every voxel, move outside later.)
-    float3 border = make_float3((vec.x > 0) ? 1 : 0,
-                                (vec.y > 0) ? 1 : 0,
-                                (vec.z > 0) ? 1 : 0);
+    float3 border = make_float3((vec.x > 0) ? dimensions.x : 0,
+                                (vec.y > 0) ? dimensions.y : 0,
+                                (vec.z > 0) ? dimensions.z : 0);
 
     // The remaining distance to the next crossing.
     float3 alpha = delta;
