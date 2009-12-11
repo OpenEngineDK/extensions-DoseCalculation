@@ -137,7 +137,6 @@ __global__ void rayCaster(uint *d_output, float* d_intense, uint imageW, uint im
     int maxD = 500;
     float tStep = 1.0f;
     
-
     float4 col = make_float4(0.0f);
     
     float3 boxMin = make_float3(0.0f);
@@ -151,11 +150,6 @@ __global__ void rayCaster(uint *d_output, float* d_intense, uint imageW, uint im
     
     float tnear, tfar;
 	int hit = intersectBox(r, boxMin, boxMax, &tnear, &tfar);
-
-    //col = make_float4(1.0f);
-
-
-    col = make_float4(0.0f);
         
     float3 inversedd = make_float3(1.0f, 1.0f, 1.0f) / dd;
 
@@ -200,7 +194,9 @@ __global__ void rayCaster(uint *d_output, float* d_intense, uint imageW, uint im
     
     
 
-
+    // Insert directly in loop instead of break. And can we really
+    // calculate it for coords outside the screen? If so then there
+    // should probably be a fix.
     if ((x < imageW) && (y < imageH)) {
         // write output color
         uint i = __umul24(y, imageW) + x;
