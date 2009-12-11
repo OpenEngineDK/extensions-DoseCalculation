@@ -5,8 +5,8 @@
 
 using OpenEngine::Scene::Beam;
 
-void SetupDoseCalc(GLuint pbo, int w, int h, int d);
+void SetupDoseCalc(unsigned int pbo, int w, int h, int d, float sw, float sh, float sd);
 
-void RunDoseCalc(GLuint pbo, Beam beam, int beamlet_x, int beamlet_y, float dx, float dy, float dz);
+void RunDoseCalc(unsigned int pbo, Beam beam, int beamlet_x, int beamlet_y, float dx, float dy, float dz);
 
 #endif

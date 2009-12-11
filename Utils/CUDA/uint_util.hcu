@@ -10,6 +10,10 @@
 
 #include <vector_functions.h>
 
+inline __host__ __device__ float3 operator -(float3 f3, uint3 u3){
+    return make_float3(f3.x - u3.x, f3.y - u3.y, f3.z - u3.z);
+}
+
 // operators <, <=, >, >= are "strong" in the sense they require all components to fullfil the scalar operator.
 // Here are the corresponding "weak" alternatives
 
