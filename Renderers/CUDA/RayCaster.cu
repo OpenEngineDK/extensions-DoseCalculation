@@ -138,7 +138,7 @@ __global__ void rayCaster(uint *d_output, float* d_intense, uint imageW, uint im
                           float pm00, float pm11,
                           uint3 dims,
                           float3 scale) {
-    int maxD = dims.z;
+    int maxD = dims.x;
     float tStep = 1.0f;
     
     float4 col = make_float4(0.0f);
@@ -160,12 +160,17 @@ __global__ void rayCaster(uint *d_output, float* d_intense, uint imageW, uint im
     //float3 inversedd = make_float3(1.0f, 1.0f, 1.0f) / dd;
 
     if (hit) {
-        if (tnear < 0.0f) tnear = 0.0f;     // clamp to near plane
-
+        //if (tnear < 0.0f) tnear = 0.0f;     // clamp to near plane
+        //col.x = 1.0f;
         float t = tnear;
-        
-        for (int i=0;i<maxD;i++) {            
-            
+        //float t = tfar;
+
+        float3 p1 = r.origin + r.direction*tnear;
+        float3 p2 = r.origin + r.direction*tfar;
+        float3 dp = p2-p1;
+        float dist = sqrt(dp.x*dp.x + dp.y*dp.y + dp.z*dp.z);
+        maxD = dist;
+        for (int i=0;i<maxD;i++) {                        
             float3 pos = r.origin + r.direction*t;
             t += tStep;
 
@@ -175,37 +180,35 @@ __global__ void rayCaster(uint *d_output, float* d_intense, uint imageW, uint im
             
             if (i > 0 &&(spos.x < 0 ||
                 spos.y < 0 ||
-                spos.z < 0 || 
+                spos.z < 0 ||
                 spos.x > dims.x ||
                 spos.y > dims.y ||
                 spos.z > dims.z
-                 )) {                
-                break;                
+                 )) {
+                break;
             }
-
-            /* if (pos.x < 0 || */
-            /*     pos.y < 0 || */
-            /*     pos.z < 0 || */
-            /*     pos.x > dd.x || */
-            /*     pos.y > dd.y */
-            /*     || pos.z > dd.z */
-            /*     ) { */
-            /*     col = make_float4(pos); */
-            /*     break; */
-            /* } */
-                                             
 
             float sample = tex3D(tex, spos.x, spos.y, spos.z);
             if (sample > minIt && sample <= maxIt) {
-                float inte = 0.0f;
-                uint3 posi = make_uint3(pos);
-                int idx = co_to_idx(posi, dims);
-                
-                //inte = d_intense[idx];
-                
-                
+
                 col = make_float4(sample);
+
+                /* float inte = 1.0f; */
+                /* uint3 posi = make_uint3(spos); */
+                /* int idx = co_to_idx(posi, dims); */
+                
+                /* if (idx < dims.x*dims.y*dims.z) {  */
+                /*     col.y = 0.0f;  */
+                /* } */
+                /*     col.y = 0.0; */
+                /*     //inte = d_intense[idx]; */
+                /* } else { */
+
+                /* } */
+                                
+
                 //col.x = inte;
+
                 break;
             }
 
@@ -243,8 +246,13 @@ void RenderToPBO(int pbo, float* cuDoseArr, int width, int height, float* invMat
     const dim3 blockSize(16, 16, 1);
     const dim3 gridSize(width / blockSize.x, height / blockSize.y);
 
-    //
-    //printf("cast: %f,%f,%f\n",dx,dy,dz);
+    float3 po = make_float3(100,100,30);
+    uint3 poi = make_uint3(po);
+    int idx = co_to_idx(poi,dimensions1);
+    //printf("[%d] %d,%d,%d\n",idx,poi.x,poi.y,poi.z);
+    //printf(" %d\n",dimensions1.x*dimensions1.y*dimensions1.z);
+    
+    //printf("cast: %d,%d,%d\n",dimensions1.x,dimensions1.y,dimensions1.z);
     rayCaster<<<gridSize, blockSize>>>(p,cuDoseArr,width,height,
                                        minIt,maxIt,1,1,pm00,pm11,dimensions1,scale1);
     CHECK_FOR_CUDA_ERROR();
