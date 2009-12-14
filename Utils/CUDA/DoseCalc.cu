@@ -45,74 +45,100 @@ __device__ float GetRadiologicalDepth(uint3 coordinate, float3 source, uint3 dim
     const float dist = length(vec);
 
     // Instead of alpha between [0; 1] use the length of the
-    // vector. (and in the future scale the length to make it match
-    // texcoords?)
+    // vector. This is usefull for when we need the length travelede
+    // when accumulating radiological depth.
 
     // delta.x is the distance the beam has to travel between crossing
     // zy-planes.
-    const float3 delta = dist * scale / vec;
-    
-    uint3 texCoord = coordinate;
+    const float delta[3] = {dist * scale.x / vec.x,
+                      dist * scale.y / vec.y,
+                      dist * scale.z / vec.z};
 
-    int3 texDelta;
-    texDelta.x = (vec.x > 0) ? 1 : -1;
-    texDelta.y = (vec.y > 0) ? 1 : -1;
-    texDelta.z = (vec.z > 0) ? 1 : -1;
+    int texCoord[3] = {coordinate.x, coordinate.y, coordinate.z};
+
+    const int texDelta[3] = {(vec.x > 0) ? 1 : -1,
+                       (vec.y > 0) ? 1 : -1,
+                       (vec.z > 0) ? 1 : -1};
 
     // The border texcoords (@TODO: Doesn't have to be calculated for
     // every voxel, move outside later.)
-    const uint3 border = make_uint3((vec.x > 0) ? dimensions.x : -1,
-                                    (vec.y > 0) ? dimensions.y : -1,
-                                    (vec.z > 0) ? dimensions.z : -1);
-
+    const int border[3] = {(vec.x > 0) ? dimensions.x : -1,
+                           (vec.y > 0) ? dimensions.y : -1,
+                           (vec.z > 0) ? dimensions.z : -1};
+    
     // The remaining distance to the next crossing.
-    float3 alpha = delta;
+    //float3 alpha = delta;
+    float alpha[3] = {delta[0], delta[1], delta[2]};
 
-    const int maxItr = 1;
+    const int maxItr = 10;
 
     float radiologicalDepth = 0;
     int itr = 0;
-    while (texCoord.x != border.x ||
-           texCoord.y != border.y ||
-           texCoord.z != border.z || itr > maxItr){
 
+    while (itr < maxItr){
         itr++;
 
-        // Replace float3 with float[3] so we only need to branch for
-        // the index and can then do the calculations?
-        float alphaInc;
-        if (alpha.x < alpha.y){
-            if (alpha.x < alpha.z) {
-                // x is smallest
-                alphaInc = alpha.x;
-                alpha.x += delta.x;
-                texCoord.x += texDelta.x;
-            } else {
-                // z is smalles
-                alphaInc = alpha.z;
-                alpha.z += delta.z;
-                texCoord.z += texDelta.z;
-            }
-        }else{
-            if (alpha.y < alpha.z) {
-                // y is smallest
-                alphaInc = alpha.y;
-                alpha.y += delta.y;
-                texCoord.y += texDelta.y;                
-            } else {
-                // z is smalles
-                alphaInc = alpha.z;
-                alpha.z += delta.z;
-                texCoord.z += texDelta.z;
-            }
-        }
-        alpha.x -= alphaInc;
-        alpha.y -= alphaInc;
-        alpha.z -= alphaInc;
+        // is x less then y?
+        int minIndex = (alpha[0] < alpha[1]) ? alpha[0] : alpha[1];
+        // is the above min less then z?
+        minIndex = (minIndex < alpha[2]) ? minIndex : alpha[2];
 
-        radiologicalDepth += alphaInc * tex3D(tex, texCoord.x, texCoord.y, texCoord.z);
+        // We need to store the smallest alpha value so we can advance
+        // the alpha with that value.
+        float advance = alpha[minIndex];
+
+        // Add the delta value of the crossing dimension to prepare
+        // for the next crossing.
+        alpha[minIndex] += delta[minIndex];
+
+        // Advance the alpha values.
+        alpha[0] -= advance;
+        alpha[1] -= advance;
+        alpha[2] -= advance;
+
+        // Advance the texture coordinates
+        texCoord[minIndex] += texDelta[minIndex];
+
+        // Add the radiological length for this step to the overall
+        // depth.
+        radiologicalDepth = tex3D(tex, texCoord[0], texCoord[1], texCoord[2]);
     }
 
+    /*
+    while (texCoord[0] != border.x ||
+           texCoord[1] != border.y ||
+           texCoord[2] != border.z ||
+           itr < maxItr){
+    
+        itr++;
+
+        // is x less then y?
+        int minIndex = (alpha[0] < alpha[1]) ? alpha[0] : alpha[1];
+        // is the above min less then z?
+        minIndex = (minIndex < alpha[2]) ? minIndex : alpha[2];
+        
+        // We need to store the smallest alpha value so we can advance
+        // the alpha with that value.
+        float advance = alpha[minIndex];
+
+        // Add the delta value of the crossing dimension to prepare
+        // for the next crossing.
+        alpha[minIndex] += delta[minIndex];
+
+        // Advance the alpha values.
+        alpha[0] -= advance;
+        alpha[1] -= advance;
+        alpha[2] -= advance;
+
+        // Advance the texture coordinates
+        texCoord[minIndex] += texDelta[minIndex];
+
+        // Add the radiological length for this step to the overall
+        // depth.
+        radiologicalDepth = tex3D(tex, texCoord[0], texCoord[1], texCoord[2]);
+    }
+    */
+    
     return radiologicalDepth;
 }
 
