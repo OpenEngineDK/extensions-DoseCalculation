@@ -128,7 +128,7 @@ namespace OpenEngine {
                 for(unsigned int i=0; i < this->width; i++) {
                     for(unsigned int j=0; j < this->height; j++) {
                         for(unsigned int k=0; k < this->depth; k++)  {
-                            data[k*this->width*this->height+j*this->width+i] = (((T)s_data[k*scl+b_width*b_height+j*scl*b_width+i*scl]) + 1000.0)/2000.0;
+                            data[k*this->width*this->height+j*this->width+i] = (((T)s_data[k*scl*b_width*b_height+j*scl*b_width+i*scl]) + 1000.0)/2000.0;
                         }
                     }
                 }
