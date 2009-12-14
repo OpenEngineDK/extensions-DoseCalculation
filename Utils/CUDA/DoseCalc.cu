@@ -23,12 +23,13 @@ void SetupDoseCalc(float** cuDoseArr,
 
     printf("malloc: %d,%d,%d\n",w,h,d);
 
+    // Setup texture
     cudaChannelFormatDesc channelDesc = cudaCreateChannelDesc<float>();
+    tex.normalized = false;
     tex.filterMode = cudaFilterModeLinear;
     tex.addressMode[0] = cudaAddressModeClamp;
     tex.addressMode[1] = cudaAddressModeClamp;
     tex.addressMode[2] = cudaAddressModeClamp;
-
     cudaBindTextureToArray(tex, GetVolumeArray(), channelDesc);
 
     printf("SetupDoseCalc done\n");
@@ -51,14 +52,12 @@ __device__ float GetRadiologicalDepth(uint3 coordinate, float3 source, uint3 dim
     // delta.x is the distance the beam has to travel between crossing
     // zy-planes.
     const float delta[3] = {dist * scale.x / vec.x,
-                      dist * scale.y / vec.y,
-                      dist * scale.z / vec.z};
-
-    int texCoord[3] = {coordinate.x, coordinate.y, coordinate.z};
+                            dist * scale.y / vec.y,
+                            dist * scale.z / vec.z};
 
     const int texDelta[3] = {(vec.x > 0) ? 1 : -1,
-                       (vec.y > 0) ? 1 : -1,
-                       (vec.z > 0) ? 1 : -1};
+                             (vec.y > 0) ? 1 : -1,
+                             (vec.z > 0) ? 1 : -1};
 
     // The border texcoords (@TODO: Doesn't have to be calculated for
     // every voxel, move outside later.)
@@ -70,53 +69,27 @@ __device__ float GetRadiologicalDepth(uint3 coordinate, float3 source, uint3 dim
     //float3 alpha = delta;
     float alpha[3] = {delta[0], delta[1], delta[2]};
 
-    const int maxItr = 10;
+    int texCoord[3] = {coordinate.x, coordinate.y, coordinate.z};
+
+    const int maxItr = 100;
 
     float radiologicalDepth = 0;
     int itr = 0;
 
-    while (itr < maxItr){
-        itr++;
-
-        // is x less then y?
-        int minIndex = (alpha[0] < alpha[1]) ? alpha[0] : alpha[1];
-        // is the above min less then z?
-        minIndex = (minIndex < alpha[2]) ? minIndex : alpha[2];
-
-        // We need to store the smallest alpha value so we can advance
-        // the alpha with that value.
-        float advance = alpha[minIndex];
-
-        // Add the delta value of the crossing dimension to prepare
-        // for the next crossing.
-        alpha[minIndex] += delta[minIndex];
-
-        // Advance the alpha values.
-        alpha[0] -= advance;
-        alpha[1] -= advance;
-        alpha[2] -= advance;
-
-        // Advance the texture coordinates
-        texCoord[minIndex] += texDelta[minIndex];
-
-        // Add the radiological length for this step to the overall
-        // depth.
-        radiologicalDepth = tex3D(tex, texCoord[0], texCoord[1], texCoord[2]);
-    }
-
-    /*
-    while (texCoord[0] != border.x ||
-           texCoord[1] != border.y ||
-           texCoord[2] != border.z ||
+    while (/*(texCoord[0] != border[0] &&
+            texCoord[1] != border[1] &&
+            texCoord[2] != border[2]) ||*/
+           0 <= texCoord[0] && texCoord[0] < dimensions.x &&
+           0 <= texCoord[1] && texCoord[1] < dimensions.y &&
+           0 <= texCoord[2] && texCoord[2] < dimensions.z &&
            itr < maxItr){
-    
         itr++;
 
         // is x less then y?
-        int minIndex = (alpha[0] < alpha[1]) ? alpha[0] : alpha[1];
+        int minIndex = (alpha[0] < alpha[1]) ? 0 : 1;
         // is the above min less then z?
-        minIndex = (minIndex < alpha[2]) ? minIndex : alpha[2];
-        
+        minIndex = (alpha[minIndex] < alpha[2]) ? minIndex : 2;
+
         // We need to store the smallest alpha value so we can advance
         // the alpha with that value.
         float advance = alpha[minIndex];
@@ -137,8 +110,7 @@ __device__ float GetRadiologicalDepth(uint3 coordinate, float3 source, uint3 dim
         // depth.
         radiologicalDepth = tex3D(tex, texCoord[0], texCoord[1], texCoord[2]);
     }
-    */
-    
+
     return radiologicalDepth;
 }
 
@@ -149,7 +121,8 @@ __global__ void radioDepth(float* output, uint3 dims, float3 scale, float3 sourc
 
     float rDepth = GetRadiologicalDepth(coordinate, source, dims, scale);
 
-    output[idx] = (float(coordinate.x) / float(dims.x)); // + coordinate.y / dims.y + coordinate.z / dims.z) * 0.25f;
+    if (idx < dims.x * dims.y * dims.z)
+        output[idx] = (float(coordinate.x) / float(dims.x)); // + coordinate.y / dims.y + coordinate.z / dims.z) * 0.25f;
 }
 
 __global__ void doseCalc(uint *d_output) {
