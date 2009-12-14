@@ -40,7 +40,7 @@ void SetupDoseCalc(float** cuDoseArr,
 
 __device__ float GetRadiologicalDepth(uint3 coordinate, float3 source, uint3 dimensions, float3 scale){
     // The vector from the coordinate to the source
-    float3 vec = source - coordinate;
+    const float3 vec = source - coordinate;
 
     float dist = length(vec);
 
@@ -114,9 +114,9 @@ __device__ float GetRadiologicalDepth(uint3 coordinate, float3 source, uint3 dim
 __global__ void radioDepth(float* output, uint3 dims, float3 scale, float3 source) {
     const unsigned int idx = blockIdx.x*blockDim.x + threadIdx.x;
 
-    uint3 coordinate = idx_to_co(idx, dims);
+    const uint3 coordinate = idx_to_co(idx, dims);
 
-    unsigned int rDepth = GetRadiologicalDepth(coordinate, source, dims, scale);
+    float rDepth = GetRadiologicalDepth(coordinate, source, dims, scale);
 
     output[idx] = (float(coordinate.x) / float(dims.x)); // + coordinate.y / dims.y + coordinate.z / dims.z) * 0.25f;
 }
@@ -128,12 +128,17 @@ __global__ void doseCalc(uint *d_output) {
 void RunDoseCalc(float* cuDoseArr, Beam beam, int beamlet_x, int beamlet_y, float dx, float dy, float dz) {
     float3 source = make_float3(beam.src[0], beam.src[1], beam.src[2]);
 
-    const unsigned int blockDimX = 256;
-    dim3 blockDim(blockDimX,1,1);
-    float entries = dimensions.x * dimensions.y * dimensions.z;
-    dim3 gridDim(ceil(entries/(float)blockDimX), 1, 1);
+    /*
+    const unsigned int blockDimX = 512;
+    const dim3 blockSize(blockDimX,1,1);
+    const float entries = dimensions.x * dimensions.y * dimensions.z;
+    const dim3 gridSize(ceil(entries/(float)blockDimX), 1, 1);
+    */
 
-    radioDepth<<< gridDim, blockDim >>>((float*)cuDoseArr, 
+    const dim3 blockSize(16, 16, 1);
+    const dim3 gridSize(dimensions.x * dimensions.z / blockSize.x, dimensions.y / blockSize.y);
+
+    radioDepth<<< gridSize, blockSize >>>((float*)cuDoseArr, 
                                         dimensions,
                                         scale,
                                         source);
