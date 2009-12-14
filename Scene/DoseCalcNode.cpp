@@ -14,7 +14,6 @@
 #include <Utils/CUDA/DoseCalc.h>
 #include <Utils/CUDA/Doze.h>
 
-
 using namespace OpenEngine::Geometry;
 
 namespace OpenEngine {
@@ -130,9 +129,6 @@ namespace OpenEngine {
                           intensityTex->GetWidth(),
                           intensityTex->GetHeight(),
                           intensityTex->GetDepth());
-
-                logger.info << "SETUP DONE" << logger.end;
-
             }
 
             // glGenBuffers(1, &dosePbo);

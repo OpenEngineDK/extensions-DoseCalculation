@@ -29,7 +29,7 @@ namespace OpenEngine {
             }
 
             void DoseCalcRenderingView::VisitBeamNode(BeamNode* node){
-                glDisable(GL_DEPTH_TEST);
+                //glDisable(GL_DEPTH_TEST);
                 glColor4f(0,1,0,1);
                 glEnable(GL_LINE_SMOOTH);
                 // draw beam surface
@@ -57,7 +57,7 @@ namespace OpenEngine {
                 glEnd();
                
                 glDisable(GL_LINE_SMOOTH);
-                glEnable(GL_DEPTH_TEST);
+                //glEnable(GL_DEPTH_TEST);
                 node->VisitSubNodes(*this);
             }
 
