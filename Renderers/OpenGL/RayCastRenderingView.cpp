@@ -30,7 +30,8 @@ using namespace OpenEngine::Display;
                 IRenderingView(viewport),
                 RenderingView(viewport) {
                 isSetup = false;
-
+                minIntensity = 0.8;
+                maxIntensity = 1.0;
             }
 
             void RayCastRenderingView::VisitDoseCalcNode(DoseCalcNode* node){
@@ -55,8 +56,9 @@ using namespace OpenEngine::Display;
                                    tex->GetWidth(),
                                    tex->GetHeight(),
                                    tex->GetDepth(),
-                                   scale[0],scale[1],scale[2]
-                                   );
+                                   scale[0],
+                                   scale[1],
+                                   scale[2]);                                   
 
                     logger.info << "Ray Caster set up" << logger.end;
                     isSetup = true;
@@ -76,7 +78,8 @@ using namespace OpenEngine::Display;
                 float dz = node->GetDoseTex()->GetDepth();
                 
                 
-                RenderToPBO(pbo,node->cuDoseArr,w,h,iva,pm(0,0),pm(1,1));
+                RenderToPBO(pbo,node->cuDoseArr,w,h,iva,pm(0,0),pm(1,1),
+                            minIntensity,maxIntensity);
 
                 glMatrixMode(GL_MODELVIEW);
                 glLoadIdentity();

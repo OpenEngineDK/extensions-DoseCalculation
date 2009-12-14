@@ -3,11 +3,6 @@
 #include <Utils/CUDA/uint_util.hcu>
 #include <Meta/CUDA.h>
 
-typedef unsigned char uchar;
-
-// typedef struct {
-//     float4 m[3];
-// } float3x4;
 
 struct Matrix4x4 {
     float4 e[4]; // rows
@@ -138,7 +133,7 @@ __device__ Ray RayForPoint(uint u, uint v, uint width, uint height,float pm00, f
 }
 
 __global__ void rayCaster(uint *d_output, float* d_intense, uint imageW, uint imageH,
-                          float density, float brightness,
+                          float minIt, float maxIt,
                           float transferOffset, float transferScale,
                           float pm00, float pm11,
                           uint3 dims,
@@ -149,7 +144,9 @@ __global__ void rayCaster(uint *d_output, float* d_intense, uint imageW, uint im
     float4 col = make_float4(0.0f);
     
     float3 boxMin = make_float3(0.0f);
-    float3 boxMax = make_float3( dims.x, dims.y, dims.z);
+    float3 boxMax = make_float3( dims.x*scale.x, 
+                                 dims.y*scale.y,
+                                 dims.z*scale.z);
 
 
     uint x = __umul24(blockIdx.x, blockDim.x) + threadIdx.x;
@@ -167,16 +164,24 @@ __global__ void rayCaster(uint *d_output, float* d_intense, uint imageW, uint im
 
         float t = tnear;
         
-        for (int i=0;i<maxD;i++) {
+        for (int i=0;i<maxD;i++) {            
             
             float3 pos = r.origin + r.direction*t;
+            t += tStep;
 
             // descale it
-            float3 spos = pos;// * inversedd;
+            float3 spos = pos / scale;// * inversedd;
             //pos = spos;
-
-            if (pos.z < 0)                 
-                break;
+            
+            if (i > 0 &&(spos.x < 0 ||
+                spos.y < 0 ||
+                spos.z < 0 || 
+                spos.x > dims.x ||
+                spos.y > dims.y ||
+                spos.z > dims.z
+                 )) {                
+                break;                
+            }
 
             /* if (pos.x < 0 || */
             /*     pos.y < 0 || */
@@ -191,20 +196,20 @@ __global__ void rayCaster(uint *d_output, float* d_intense, uint imageW, uint im
                                              
 
             float sample = tex3D(tex, spos.x, spos.y, spos.z);
-            if (sample > 0.8f) {
+            if (sample > minIt && sample <= maxIt) {
                 float inte = 0.0f;
                 uint3 posi = make_uint3(pos);
                 int idx = co_to_idx(posi, dims);
                 
-                inte = d_intense[idx];
+                //inte = d_intense[idx];
                 
                 
                 col = make_float4(sample);
-                col.x = inte;
+                //col.x = inte;
                 break;
             }
 
-            t += tStep;
+
         }
     }
 
@@ -215,16 +220,16 @@ __global__ void rayCaster(uint *d_output, float* d_intense, uint imageW, uint im
     // it. W're doing the calculations anyways. Might as well discard
     // them later and not slowdown every calculation.
 
-    if ((x < imageW) && (y < imageH)) {
+    //if ((x < imageW) && (y < imageH)) {
         // write output color
-        uint i = __umul24(y, imageW) + x;
-        d_output[i] = rgbaFloatToInt(col);
-    }
+    uint i = __umul24(y, imageW) + x;
+    d_output[i] = rgbaFloatToInt(col);
+        ///}
 
     
 }
 
-void RenderToPBO(int pbo, float* cuDoseArr, int width, int height, float* invMat, float pm00, float pm11) {
+void RenderToPBO(int pbo, float* cuDoseArr, int width, int height, float* invMat, float pm00, float pm11, float minIt, float maxIt) {
     cudaMemcpyToSymbol(c_invViewMatrix, invMat, sizeof(float4)*4);
     CHECK_FOR_CUDA_ERROR();
 
@@ -241,7 +246,7 @@ void RenderToPBO(int pbo, float* cuDoseArr, int width, int height, float* invMat
     //
     //printf("cast: %f,%f,%f\n",dx,dy,dz);
     rayCaster<<<gridSize, blockSize>>>(p,cuDoseArr,width,height,
-                                       1,1,1,1,pm00,pm11,dimensions1,scale1);
+                                       minIt,maxIt,1,1,pm00,pm11,dimensions1,scale1);
     CHECK_FOR_CUDA_ERROR();
 
     cudaGLUnmapBufferObject(pbo);
