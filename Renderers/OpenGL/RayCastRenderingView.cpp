@@ -48,11 +48,15 @@ using namespace OpenEngine::Display;
 
                     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
 
+                    Vector<3,float> scale = node->GetScale();
+
                     SetupRayCaster(pbo,
                                    tex->GetData(),
                                    tex->GetWidth(),
                                    tex->GetHeight(),
-                                   tex->GetDepth());
+                                   tex->GetDepth(),
+                                   scale[0],scale[1],scale[2]
+                                   );
 
                     logger.info << "Ray Caster set up" << logger.end;
                     isSetup = true;
@@ -72,7 +76,7 @@ using namespace OpenEngine::Display;
                 float dz = node->GetDoseTex()->GetDepth();
                 
                 
-                RenderToPBO(pbo,node->cuDoseArr,w,h,iva,pm(0,0),pm(1,1),dx,dy,dz);
+                RenderToPBO(pbo,node->cuDoseArr,w,h,iva,pm(0,0),pm(1,1));
 
                 glMatrixMode(GL_MODELVIEW);
                 glLoadIdentity();

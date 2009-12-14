@@ -53,8 +53,8 @@ uint3 dimensions1;
 float3 scale1;
 
 void SetupRayCaster(int pbo,  const float* data,
-                    int w, int h, int d/*,
-                    float sw, float sh, float sd */) {
+                    int w, int h, int d,
+                    float sw, float sh, float sd ) {
     
     cudaGLRegisterBufferObject(pbo);
     CHECK_FOR_CUDA_ERROR();
@@ -70,6 +70,9 @@ void SetupRayCaster(int pbo,  const float* data,
 
     cudaBindTextureToArray(tex, GetVolumeArray(), channelDesc);
     CHECK_FOR_CUDA_ERROR();
+
+    dimensions1 = make_uint3(w, h, d);
+    scale1 = make_float3(sw, sh, sd);
 }
 
 __device__ uint rgbaFloatToInt(float4 rgba)
@@ -138,14 +141,15 @@ __global__ void rayCaster(uint *d_output, float* d_intense, uint imageW, uint im
                           float density, float brightness,
                           float transferOffset, float transferScale,
                           float pm00, float pm11,
-                          float3 dd) {
-    int maxD = dd.z;
+                          uint3 dims,
+                          float3 scale) {
+    int maxD = dims.z;
     float tStep = 1.0f;
     
     float4 col = make_float4(0.0f);
     
     float3 boxMin = make_float3(0.0f);
-    float3 boxMax = make_float3(dd.x, dd.y, dd.z);
+    float3 boxMax = make_float3( dims.x, dims.y, dims.z);
 
 
     uint x = __umul24(blockIdx.x, blockDim.x) + threadIdx.x;
@@ -190,12 +194,9 @@ __global__ void rayCaster(uint *d_output, float* d_intense, uint imageW, uint im
             if (sample > 0.8f) {
                 float inte = 0.0f;
                 uint3 posi = make_uint3(pos);
-                uint3 ddi = make_uint3(dd);
-                int idx = co_to_idx(posi, ddi);
+                int idx = co_to_idx(posi, dims);
                 
-
-                if (idx < dd.x*dd.y*dd.z)
-                    inte = d_intense[idx];
+                inte = d_intense[idx];
                 
                 
                 col = make_float4(sample);
@@ -223,7 +224,7 @@ __global__ void rayCaster(uint *d_output, float* d_intense, uint imageW, uint im
     
 }
 
-void RenderToPBO(int pbo, float* cuDoseArr, int width, int height, float* invMat, float pm00, float pm11,float dx, float dy, float dz) {
+void RenderToPBO(int pbo, float* cuDoseArr, int width, int height, float* invMat, float pm00, float pm11) {
     cudaMemcpyToSymbol(c_invViewMatrix, invMat, sizeof(float4)*4);
     CHECK_FOR_CUDA_ERROR();
 
@@ -239,8 +240,8 @@ void RenderToPBO(int pbo, float* cuDoseArr, int width, int height, float* invMat
 
     //
     //printf("cast: %f,%f,%f\n",dx,dy,dz);
-    rayCaster<<<gridSize, blockSize>>>(p,cuDoseArr,width,height,1,1,1,1,pm00,pm11,make_float3(dx,dy,dz));
-
+    rayCaster<<<gridSize, blockSize>>>(p,cuDoseArr,width,height,
+                                       1,1,1,1,pm00,pm11,dimensions1,scale1);
     CHECK_FOR_CUDA_ERROR();
 
     cudaGLUnmapBufferObject(pbo);
