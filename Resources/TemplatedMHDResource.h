@@ -98,10 +98,10 @@ namespace OpenEngine {
                 }
                 in->close();
 
-                int b_width = this->width;
-                int b_height = this->height;
-                int b_depth = this->depth;
-                int b_size = b_width * b_height * b_depth;
+                unsigned int b_width = this->width;
+                unsigned int b_height = this->height;
+                unsigned int b_depth = this->depth;
+                unsigned int b_size = b_width * b_height * b_depth;
                
                 const int scl = 5;
                 
