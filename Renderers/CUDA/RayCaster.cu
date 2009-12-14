@@ -165,20 +165,15 @@ __global__ void rayCaster(uint *d_output, float* d_intense, uint imageW, uint im
         float t = tnear;
         //float t = tfar;
 
-        float3 p1 = r.origin + r.direction*tnear;
-        float3 p2 = r.origin + r.direction*tfar;
-        float3 dp = p2-p1;
-        float dist = sqrt(dp.x*dp.x + dp.y*dp.y + dp.z*dp.z);
-        maxD = dist;
-        for (int i=0;i<maxD;i++) {                        
+
+        for (float t=tnear;t<tfar;t+=tStep) {                        
             float3 pos = r.origin + r.direction*t;
-            t += tStep;
 
             // descale it
             float3 spos = pos / scale;// * inversedd;
             //pos = spos;
             
-            if (i > 0 &&(spos.x < 0 ||
+            if (t > tnear &&(spos.x < 0 ||
                 spos.y < 0 ||
                 spos.z < 0 ||
                 spos.x > dims.x ||
