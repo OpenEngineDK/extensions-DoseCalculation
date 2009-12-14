@@ -101,13 +101,16 @@ namespace OpenEngine {
                 int b_width = this->width;
                 int b_height = this->height;
                 int b_depth = this->depth;
+                int b_size = b_width * b_height * b_depth;
                
-                int scl = 5;
+                const int scl = 5;
                 
+                this->space_x *= scl;
+                this->space_y *= scl;
+                this->space_z *= scl;
                 this->width /= scl;
                 this->height /= scl;
                 this->depth /= scl;
-
                 this->size = this->width * this->height * this->depth;
                 
                 if (this->size == 0) 
@@ -117,14 +120,12 @@ namespace OpenEngine {
     
                 this->data = new float[this->size];
                 T* data = (T*) this->data;
-                short* s_data = new short[b_width * b_height * b_depth];
+                short* s_data = new short[b_size];
                 FILE* pFile = fopen (rawfile.c_str(), "rb");
                 if (pFile == NULL) throw Exception("Raw file not found.");
-                size_t count = fread (s_data, 2, b_width * b_height * b_depth, pFile);
+                size_t count = fread (s_data, 2, b_size, pFile);
                 fclose(pFile);
-                if (count != b_width * b_height * b_depth) throw new ResourceException("Raw file read error."); 
-
-                
+                if (count != b_size) throw new ResourceException("Raw file read error."); 
                 for(unsigned int i=0; i < this->width; i++) {
                     for(unsigned int j=0; j < this->height; j++) {
                         for(unsigned int k=0; k < this->depth; k++)  {
@@ -132,11 +133,7 @@ namespace OpenEngine {
                         }
                     }
                 }
-                // for(unsigned int i=0; i < this->size; i++)
-                //     //data[i] = (float)s_data[i];
-                //     data[i] = (((T)s_data[i]) + 1000.0f) / 2000.0f;
                 delete[] s_data;
-                
                 this->format = OE_LUMINANCE;
             }
 
