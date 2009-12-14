@@ -173,15 +173,6 @@ __global__ void rayCaster(uint *d_output, float* d_intense, uint imageW, uint im
             float3 spos = pos / scale;// * inversedd;
             //pos = spos;
             
-            if (t > tnear &&(spos.x < 0 ||
-                spos.y < 0 ||
-                spos.z < 0 ||
-                spos.x > dims.x ||
-                spos.y > dims.y ||
-                spos.z > dims.z
-                 )) {
-                break;
-            }
 
             float sample = tex3D(tex, spos.x, spos.y, spos.z);
             if (sample > minIt && sample <= maxIt) {
