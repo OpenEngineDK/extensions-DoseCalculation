@@ -42,7 +42,7 @@ __device__ float GetRadiologicalDepth(uint3 coordinate, float3 source, uint3 dim
     // The vector from the coordinate to the source
     const float3 vec = source - coordinate;
 
-    float dist = length(vec);
+    const float dist = length(vec);
 
     // Instead of alpha between [0; 1] use the length of the
     // vector. (and in the future scale the length to make it match
@@ -50,7 +50,7 @@ __device__ float GetRadiologicalDepth(uint3 coordinate, float3 source, uint3 dim
 
     // delta.x is the distance the beam has to travel between crossing
     // zy-planes.
-    float3 delta = dist * scale / vec;
+    const float3 delta = dist * scale / vec;
     
     uint3 texCoord = coordinate;
 
@@ -61,17 +61,22 @@ __device__ float GetRadiologicalDepth(uint3 coordinate, float3 source, uint3 dim
 
     // The border texcoords (@TODO: Doesn't have to be calculated for
     // every voxel, move outside later.)
-    float3 border = make_float3((vec.x > 0) ? dimensions.x : 0,
-                                (vec.y > 0) ? dimensions.y : 0,
-                                (vec.z > 0) ? dimensions.z : 0);
+    const uint3 border = make_uint3((vec.x > 0) ? dimensions.x : -1,
+                                    (vec.y > 0) ? dimensions.y : -1,
+                                    (vec.z > 0) ? dimensions.z : -1);
 
     // The remaining distance to the next crossing.
     float3 alpha = delta;
 
+    const int maxItr = 1;
+
     float radiologicalDepth = 0;
+    int itr = 0;
     while (texCoord.x != border.x ||
            texCoord.y != border.y ||
-           texCoord.z != border.z){
+           texCoord.z != border.z || itr > maxItr){
+
+        itr++;
 
         // Replace float3 with float[3] so we only need to branch for
         // the index and can then do the calculations?
@@ -105,7 +110,7 @@ __device__ float GetRadiologicalDepth(uint3 coordinate, float3 source, uint3 dim
         alpha.y -= alphaInc;
         alpha.z -= alphaInc;
 
-        radiologicalDepth += tex3D(tex, texCoord.x, texCoord.y, texCoord.z);
+        radiologicalDepth += alphaInc * tex3D(tex, texCoord.x, texCoord.y, texCoord.z);
     }
 
     return radiologicalDepth;
