@@ -2,9 +2,26 @@
 
 #include <Utils/CUDA/DoseCalc.h>
 #include <Utils/CUDA/uint_util.hcu>
+#include <Utils/CUDA/float_util.hcu>
 #include <Utils/CUDA/DozeCuda.h>
 
 #include <stdlib.h>
+
+struct Matrix3x3 {
+    float3 e[3];
+
+    __device__ float3 mul(float3 m){
+        return make_float3(dot(m, e[0]),
+                           dot(m, e[1]),
+                           dot(m, e[2]));
+    }
+};
+
+struct CudaBeam {
+    float3 source;
+    Matrix3x3 invCone1;
+    Matrix3x3 invCone2;
+};
 
 typedef unsigned char uchar;
 typedef unsigned int  uint;
@@ -37,6 +54,10 @@ void SetupDoseCalc(float** cuDoseArr,
     CHECK_FOR_CUDA_ERROR();
     dimensions = make_uint3(w, h, d);
     scale = make_float3(sw, sh, sd);
+}
+
+__device__ bool VoxelInsiceBeam(Matrix3x3 invCone1, Matrix3x3 invCone2, float3 point){
+    return (invCone1.mul(point) >= 0.0f && invCone2.mul(point) >= 0.0f);
 }
 
 __device__ float GetRadiologicalDepth(uint3 coordinate, float3 source, uint3 dimensions, float3 scale){
@@ -131,13 +152,6 @@ __global__ void doseCalc(uint *d_output) {
 
 void RunDoseCalc(float* cuDoseArr, Beam beam, int beamlet_x, int beamlet_y, float dx, float dy, float dz) {
     float3 source = make_float3(beam.src[0], beam.src[1], beam.src[2]);
-
-    /*
-    const unsigned int blockDimX = 512;
-    const dim3 blockSize(blockDimX,1,1);
-    const float entries = dimensions.x * dimensions.y * dimensions.z;
-    const dim3 gridSize(ceil(entries/(float)blockDimX), 1, 1);
-    */
 
     const dim3 blockSize(16, 16, 1);
     const dim3 gridSize(dimensions.x * dimensions.z / blockSize.x, dimensions.y / blockSize.y);
