@@ -76,12 +76,12 @@ __device__ float GetRadiologicalDepth(uint3 coordinate, float3 source, uint3 dim
     float radiologicalDepth = 0;
     int itr = 0;
 
-    while (/*(texCoord[0] != border[0] &&
+    while ((texCoord[0] != border[0] &&
             texCoord[1] != border[1] &&
-            texCoord[2] != border[2]) ||*/
-           0 <= texCoord[0] && texCoord[0] < dimensions.x &&
+            texCoord[2] != border[2]) &&
+           /*0 <= texCoord[0] && texCoord[0] < dimensions.x &&
            0 <= texCoord[1] && texCoord[1] < dimensions.y &&
-           0 <= texCoord[2] && texCoord[2] < dimensions.z &&
+           0 <= texCoord[2] && texCoord[2] < dimensions.z && */
            itr < maxItr){
         itr++;
 
@@ -108,7 +108,7 @@ __device__ float GetRadiologicalDepth(uint3 coordinate, float3 source, uint3 dim
 
         // Add the radiological length for this step to the overall
         // depth.
-        radiologicalDepth = tex3D(tex, texCoord[0], texCoord[1], texCoord[2]);
+        radiologicalDepth = advance * tex3D(tex, texCoord[0], texCoord[1], texCoord[2]);
     }
 
     return radiologicalDepth;
@@ -122,7 +122,7 @@ __global__ void radioDepth(float* output, uint3 dims, float3 scale, float3 sourc
     float rDepth = GetRadiologicalDepth(coordinate, source, dims, scale);
 
     if (idx < dims.x * dims.y * dims.z)
-        output[idx] = (float(coordinate.x) / float(dims.x)); // + coordinate.y / dims.y + coordinate.z / dims.z) * 0.25f;
+        output[idx] = rDepth;
 }
 
 __global__ void doseCalc(uint *d_output) {
