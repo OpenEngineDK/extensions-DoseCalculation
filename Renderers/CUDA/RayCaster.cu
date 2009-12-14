@@ -159,6 +159,10 @@ __global__ void rayCaster(uint *d_output, float* d_intense, uint imageW, uint im
         
     //float3 inversedd = make_float3(1.0f, 1.0f, 1.0f) / dd;
 
+    Ray scaledRay;
+    scaledRay.origin = r.origin / scale;
+    scaledRay.direction = r.direction / scale;
+
     if (hit) {
         //if (tnear < 0.0f) tnear = 0.0f;     // clamp to near plane
         //col.x = 1.0f;
@@ -167,10 +171,11 @@ __global__ void rayCaster(uint *d_output, float* d_intense, uint imageW, uint im
 
 
         for (float t=tnear;t<tfar;t+=tStep) {                        
-            float3 pos = r.origin + r.direction*t;
+            //float3 pos = r.origin + r.direction*t;
 
             // descale it
-            float3 spos = pos / scale;// * inversedd;
+            //float3 spos = pos / scale;// * inversedd;
+            float3 spos = scaledRay.origin + scaledRay.direction * t;
             //pos = spos;
             
 
@@ -206,7 +211,7 @@ __global__ void rayCaster(uint *d_output, float* d_intense, uint imageW, uint im
     // Insert directly in loop instead of break.
 
     // Make the size of the pbo big enough that we can't write outside
-    // it. W're doing the calculations anyways. Might as well discard
+    // it. We're doing the calculations anyways. Might as well discard
     // them later and not slowdown every calculation.
 
     //if ((x < imageW) && (y < imageH)) {
