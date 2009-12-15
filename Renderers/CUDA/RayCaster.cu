@@ -41,6 +41,9 @@ struct Ray {
 
 
 __constant__ Matrix4x4 c_invViewMatrix;
+__constant__ float3 scale;
+__constant__ float3 boxMin;
+__constant__ float3 boxMax;
 
 texture<float, 3, cudaReadModeElementType> tex;
 
@@ -68,6 +71,11 @@ void SetupRayCaster(int pbo,  const float* data,
 
     dimensions1 = make_uint3(w, h, d);
     scale1 = make_float3(sw, sh, sd);
+    cudaMemcpyToSymbol(scale, &scale1, sizeof(float3));
+    cudaMemcpyToSymbol(boxMin, &make_float3(0.0f), sizeof(float3));
+    cudaMemcpyToSymbol(boxMax, &make_float3( dimensions1.x * scale1.x, 
+                                             dimensions1.y * scale1.y, 
+                                             dimensions1.z * scale1.z), sizeof(float3));
 }
 
 __device__ uint rgbaFloatToInt(float4 rgba)
@@ -83,20 +91,24 @@ __device__ uint rgbaFloatToInt(float4 rgba)
 // http://www.siggraph.org/education/materials/HyperGraph/raytrace/rtinter3.htm
 
 __device__
-int intersectBox(Ray r, float3 boxmin, float3 boxmax, float *tnear, float *tfar)
+int intersectBox(Ray r, float *tnear, float *tfar)
 {
+    //__constant__ float3 scale;
+    //__constant__ float3 boxMin;
+    //__constant__ float3 boxMax;
+
     // compute intersection of ray with all six bbox planes
     float3 invR = make_float3(1.0f) / r.direction;
-    float3 tbot = invR * (boxmin - r.origin);
-    float3 ttop = invR * (boxmax - r.origin);
+    float3 tbot = invR * (boxMin - r.origin);
+    float3 ttop = invR * (boxMax - r.origin);
 
     // re-order intersections to find smallest and largest on each axis
     float3 tmin = fminf(ttop, tbot);
     float3 tmax = fmaxf(ttop, tbot);
 
     // find the largest tmin and the smallest tmax
-    float largest_tmin = fmaxf(fmaxf(tmin.x, tmin.y), fmaxf(tmin.x, tmin.z));
-    float smallest_tmax = fminf(fminf(tmax.x, tmax.y), fminf(tmax.x, tmax.z));
+    float largest_tmin = fmaxf(fmaxf(tmin.x, tmin.y), tmin.z);
+    float smallest_tmax = fminf(fminf(tmax.x, tmax.y), tmax.z);
 
 	*tnear = largest_tmin;
 	*tfar = smallest_tmax;
@@ -106,10 +118,6 @@ int intersectBox(Ray r, float3 boxmin, float3 boxmax, float *tnear, float *tfar)
 
 
 __device__ Ray RayForPoint(uint u, uint v, uint width, uint height,float pm00, float pm11) {
-    //float x = ((2*u - width) / float(width));
-    //float y = ((2*v - height) / float(height));
-
-
     float x = (u / float(width)) * 2.0f-1.0f ;
     float y = (v / float(height)) *2.0f-1.0f;
 
@@ -136,47 +144,34 @@ __global__ void rayCaster(uint *d_output, float* d_intense, uint imageW, uint im
                           float minIt, float maxIt,
                           float transferOffset, float transferScale,
                           float pm00, float pm11,
-                          uint3 dims,
-                          float3 scale) {
-    //int maxD = dims.x;
+                          uint3 dims) {
+    //__constant__ float3 scale;
+    //__constant__ float3 boxMin;
+    //__constant__ float3 boxMax;
+
     float tStep = 1.0f;
     
     float4 col = make_float4(0.0f);
     
-    float3 boxMin = make_float3(0.0f);
-    float3 boxMax = make_float3( dims.x*scale.x, 
-                                 dims.y*scale.y,
-                                 dims.z*scale.z);
-
-
     uint x = __umul24(blockIdx.x, blockDim.x) + threadIdx.x;
     uint y = __umul24(blockIdx.y, blockDim.y) + threadIdx.y;
     Ray r = RayForPoint(x,y,imageW,imageH,pm00,pm11);
-    // We got the ray now, lets intersect it with the box..
-    
-    float tnear, tfar;
-	int hit = intersectBox(r, boxMin, boxMax, &tnear, &tfar);
-        
-    //float3 inversedd = make_float3(1.0f, 1.0f, 1.0f) / dd;
 
-    Ray scaledRay;
-    scaledRay.origin = r.origin / scale;
-    scaledRay.direction = r.direction / scale;
+    // We got the ray now, lets intersect it with the box..
+    float tnear, tfar;
+	int hit = intersectBox(r, &tnear, &tfar);
+
+    r.origin = r.origin / scale;
+    r.direction = r.direction / scale;
 
     if (hit) {
-        //if (tnear < 0.0f) tnear = 0.0f;     // clamp to near plane
-        //col.x = 1.0f;
-        //float t = tnear;
-        //float t = tfar;
-
         for (float t=tnear;t<tfar;t+=tStep) {                        
             // descale it
-            float3 spos = scaledRay.origin + scaledRay.direction * t;
+            float3 spos = r.origin + r.direction * t;
 
             float sample = tex3D(tex, spos.x, spos.y, spos.z);
             if (sample > minIt && sample <= minIt+maxIt) {
 
-                //col = make_float4(sample);
                 col.x = sample;
 
                 //float inte = 1.0f;
@@ -225,7 +220,7 @@ void RenderToPBO(int pbo, float* cuDoseArr, int width, int height, float* invMat
     
     //printf("cast: %d,%d,%d\n",dimensions1.x,dimensions1.y,dimensions1.z);
     rayCaster<<<gridSize, blockSize>>>(p,cuDoseArr,width,height,
-                                       minIt,maxIt,1,1,pm00,pm11,dimensions1,scale1);
+                                       minIt,maxIt,1,1,pm00,pm11,dimensions1);
     CHECK_FOR_CUDA_ERROR();
 
     cudaGLUnmapBufferObject(pbo);
