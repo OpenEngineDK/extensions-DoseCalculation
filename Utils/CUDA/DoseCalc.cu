@@ -69,19 +69,19 @@ void SetupDoseCalc(float** cuDoseArr,
     CHECK_FOR_CUDA_ERROR();
 }
 
-__device__ bool VoxelInsiceBeam(float3 point){
+__device__ bool VoxelInsideBeam(float3 point){
     // __constant__ CudaBeam beam
     return beam.invCone1.mul(point - beam.src) >= 0
         && beam.invCone1.mul(point - beam.src) >= 0;
 }
 
-__device__ float GetRadiologicalDepth(const uint3 coordinate, const float3 source){
-
+__device__ float GetRadiologicalDepth(const uint3 coordinate){
     // __constant__ uint3 dims
     // __constant__ float3 scale
+    // __constant__ CudaBeam beam;
 
     // The vector from the coordinate to the source
-    const float3 vec = source - coordinate;
+    const float3 vec = beam.src - coordinate;
 
     const float dist = length(vec);
 
@@ -154,22 +154,42 @@ __device__ float GetRadiologicalDepth(const uint3 coordinate, const float3 sourc
     return radiologicalDepth;
 }
 
-__global__ void radioDepth(float* output, const float3 source) {
+__global__ void radioDepth(float* output) {
     // __constant__ uint3 dims
     // __constant__ float3 scale
+    // __constant__ CudaBeam beam;
 
     const unsigned int idx = blockIdx.x*blockDim.x + threadIdx.x;
 
     const uint3 coordinate = idx_to_co(idx, dims);
    
-    float rDepth = GetRadiologicalDepth(coordinate, source);
-
+    float rDepth = GetRadiologicalDepth(coordinate);
 
     if (idx < dims.x * dims.y * dims.z)
         output[idx] = rDepth;
 }
 
+__global__ void voxelsOfInterest(float* output) {
+    // __constant__ uint3 dims
+    // __constant__ float3 scale
+    // __constant__ CudaBeam beam;
+
+    const unsigned int idx = blockIdx.x*blockDim.x + threadIdx.x;
+
+    const uint3 coordinate = idx_to_co(idx, dims);
+
+    const float3 fcoord = make_float3(coordinate.x * scale.x,
+                                      coordinate.y * scale.y,
+                                      coordinate.z * scale.z);
+   
+    if (idx < dims.x * dims.y * dims.z)
+        output[idx] = (VoxelInsideBeam(fcoord)) ? 1 : 0;
+}
+
 __global__ void doseCalc(uint *d_output) {
+    // __constant__ uint3 dims
+    // __constant__ float3 scale
+    // __constant__ CudaBeam beam;
     
 }
 
@@ -182,16 +202,16 @@ void RunDoseCalc(float* cuDoseArr, Beam oeBeam, int beamlet_x, int beamlet_y, fl
     cudaMemcpyToSymbol(beam, &_beam, sizeof(CudaBeam));
     CHECK_FOR_CUDA_ERROR();
 
-
     /* const dim3 blockSize(16, 16, 1); */
     /* const dim3 gridSize(dimensions.x * dimensions.z / blockSize.x, dimensions.y / blockSize.y); */
+
     const dim3 blockSize(512, 1, 1);
     const dim3 gridSize(dimensions.x * dimensions.z * dimensions.y / blockSize.x, 1);
+
+    //const dim3 blockSize(4, 4, 4);
+    //const dim3 gridSize(dimensions.x / 4, dimensions.y / 4, dimensions.z / 4);
     
-
-    radioDepth<<< gridSize, blockSize >>>(cuDoseArr, 
-                                        source);
-
+    radioDepth<<< gridSize, blockSize >>>(cuDoseArr);
 
     CHECK_FOR_CUDA_ERROR();
     printf("Hurray\n");
