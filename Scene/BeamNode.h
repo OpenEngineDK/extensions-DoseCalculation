@@ -29,6 +29,8 @@ public:
     Beam GetBeam();
 
 private:
+    Vector<3,float> ScaleVec(Vector<3,float> vec, Vector<3,float> scl);
+
     friend class boost::serialization::access;
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version) {

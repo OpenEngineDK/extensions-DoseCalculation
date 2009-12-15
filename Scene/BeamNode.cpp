@@ -31,14 +31,26 @@ Beam BeamNode::GetBeam() {
     Vector<3,float> src(0,1,0), p1(0.5,0,0.5), p2(0.5,0,-0.5), p3(-0.5,0,-0.5), p4(-0.5,0,0.5);
     TransformationNode* t = st.AncestorTransformationNode(this);
     if (t) {
+        Vector<3,float> scl = t->GetScale();
+        p1 = ScaleVec(scl, p1);
+        p2 = ScaleVec(scl, p2);
+        p3 = ScaleVec(scl, p3);
+        p4 = ScaleVec(scl, p4);
+
         t->GetAccumulatedTransformations(&pos, &rot);
         src = rot.RotateVector(src) + pos;
         p1  = rot.RotateVector(p1)  + pos;
         p2  = rot.RotateVector(p2)  + pos;
         p3  = rot.RotateVector(p3)  + pos;
         p4  = rot.RotateVector(p4)  + pos;
+        
+        
     }
     return Beam(src, p1, p2, p3, p4);
+}
+
+Vector<3,float> BeamNode::ScaleVec(Vector<3,float> vec, Vector<3,float> scl) {
+    return Vector<3,float>(vec[0]*scl[0], vec[1]*scl[1], vec[2]*scl[2]); 
 }
 
 } // NS Scene
