@@ -10,10 +10,54 @@
 struct Matrix3x3 {
     float3 e[3];
 
-    __device__ float3 mul(float3 m){
+    __host__ __device__ Matrix3x3(){
+        e[0] = make_float3(1, 0, 0);
+        e[1] = make_float3(0, 1, 0);
+        e[2] = make_float3(0, 0, 1);
+    }
+
+    __host__ __device__ float3 mul(float3 m){
         return make_float3(dot(m, e[0]),
                            dot(m, e[1]),
                            dot(m, e[2]));
+    }
+
+    __host__ __device__ Matrix3x3 getInverse(){
+        Matrix3x3 res;
+
+        float e0112 = e[0].y * e[1].z;
+        float e0122 = e[0].y * e[2].z;
+        float e0211 = e[0].z * e[1].y;
+        float e0221 = e[0].z * e[2].y;
+        float e1021 = e[1].x * e[2].y;
+        float e1022 = e[1].x * e[2].z;
+        float e1122 = e[1].y * e[2].z;
+        float e1221 = e[1].z * e[2].y;
+        float e1120 = e[1].y * e[2].x;
+        float e1220 = e[1].z * e[2].x;
+
+        float determinant = e[0].x * (e1122 - e1221) - e[0].y * (e1022 - e1220) + e[0].z * (e1021 - e1120);
+        float invDet = 1.0f / determinant;
+        
+        res.e[0].x = (e1122 - e1221) * invDet;
+        res.e[0].y = (e0221 - e0122) * invDet;
+        res.e[0].z = (e0112 - e0211) * invDet;
+
+        res.e[1].x = (e1220 - e1022) * invDet;
+        res.e[1].y = (e[0].x * e[2].z - e[0].z * e[2].x) * invDet;
+        res.e[1].z = (e[0].z * e[1].x - e[0].x * e[1].z) * invDet;
+
+        res.e[2].x = (e1021 - e1120) * invDet;
+        res.e[2].y = (e[0].y * e[2].x - e[0].x * e[2].y) * invDet;
+        res.e[2].z = (e[0].x * e[1].y - e[0].y * e[1].x) * invDet;
+
+        return res;
+    }
+
+    void print(){
+        printf("[[%f, %f, %f]\n", e[0].x, e[0].y, e[0].z);
+        printf("[%f, %f, %f]\n", e[1].x, e[1].y, e[1].z);
+        printf("[%f, %f, %f]]\n", e[2].x, e[2].y, e[2].z);
     }
 };
 
@@ -27,7 +71,7 @@ typedef unsigned char uchar;
 typedef unsigned int  uint;
 
 texture<float, 3, cudaReadModeElementType> tex;
-uint3 dimensions; // should be placd in constant memory
+uint3 dimensions; // should be placed in constant memory along with their inverse
 float3 scale; // should be placed in constant memory
 
 void SetupDoseCalc(float** cuDoseArr, 
@@ -147,7 +191,7 @@ __global__ void radioDepth(float* output, uint3 dims, float3 scale, float3 sourc
 }
 
 __global__ void doseCalc(uint *d_output) {
-
+    
 }
 
 void RunDoseCalc(float* cuDoseArr, Beam beam, int beamlet_x, int beamlet_y, float dx, float dy, float dz) {
@@ -156,11 +200,19 @@ void RunDoseCalc(float* cuDoseArr, Beam beam, int beamlet_x, int beamlet_y, floa
     const dim3 blockSize(16, 16, 1);
     const dim3 gridSize(dimensions.x * dimensions.z / blockSize.x, dimensions.y / blockSize.y);
 
+    /*
     radioDepth<<< gridSize, blockSize >>>((float*)cuDoseArr, 
                                         dimensions,
                                         scale,
                                         source);
+    */
+
     CHECK_FOR_CUDA_ERROR();
     printf("Hurray\n");
 
+    Matrix3x3 id = Matrix3x3();
+    id.e[0].y = 1;
+    id.e[2].x = 5;
+    id = id.getInverse();
+    id.print();
 }

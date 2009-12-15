@@ -169,7 +169,6 @@ __global__ void rayCaster(uint *d_output, float* d_intense, uint imageW, uint im
         float t = tnear;
         //float t = tfar;
 
-
         for (float t=tnear;t<tfar;t+=tStep) {                        
             //float3 pos = r.origin + r.direction*t;
 
