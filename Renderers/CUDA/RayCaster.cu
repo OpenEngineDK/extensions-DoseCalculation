@@ -165,7 +165,7 @@ __global__ void rayCaster(uint *d_output, float* d_intense, uint imageW, uint im
     r.direction = r.direction / scale;
 
     if (hit) {
-        for (float t=tnear;t<tfar;t+=tStep) {                        
+        for (float t=tnear+tStep;t<tfar;t+=tStep) {                        
             // descale it
             float3 spos = r.origin + r.direction * t;
 
@@ -179,8 +179,10 @@ __global__ void rayCaster(uint *d_output, float* d_intense, uint imageW, uint im
                 int idx = co_to_idx(posi, dims);
                 
                 if (idx < dims.x * dims.y * dims.z) {
-                    col.y = d_intense[idx];
-                }
+                    col.y = 1.0;
+                    //col.y = d_intense[idx];
+                } 
+                
                 break;
             }
         }
