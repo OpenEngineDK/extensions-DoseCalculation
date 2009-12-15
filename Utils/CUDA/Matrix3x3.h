@@ -7,14 +7,15 @@ struct Matrix3x3 {
 
     __host__ void operator() (Vector<3, float> v0, Vector<3, float> v1, Vector<3, float> v2){
         e[0].x = v0[0];
-        e[0].y = v0[1];
-        e[0].z = v0[2];
-        e[1].x = v1[0];
+        e[0].y = v1[0];
+        e[0].z = v2[0];
+        e[1].x = v0[1];
         e[1].y = v1[1];
-        e[1].z = v1[2];
-        e[2].x = v2[0];
-        e[2].y = v2[1];
+        e[1].z = v2[1];
+        e[2].x = v0[2];
+        e[2].y = v1[2];
         e[2].z = v2[2];
+
     }
 
     __host__ __device__ float3 mul(float3 m){

@@ -72,7 +72,7 @@ void SetupDoseCalc(float** cuDoseArr,
 __device__ bool VoxelInsideBeam(float3 point){
     // __constant__ CudaBeam beam
     return beam.invCone1.mul(point - beam.src) >= 0
-        && beam.invCone1.mul(point - beam.src) >= 0;
+        || beam.invCone2.mul(point - beam.src) >= 0;
 }
 
 __device__ float GetRadiologicalDepth(const uint3 coordinate){
@@ -208,10 +208,8 @@ void RunDoseCalc(float* cuDoseArr, Beam oeBeam, int beamlet_x, int beamlet_y, fl
     const dim3 blockSize(512, 1, 1);
     const dim3 gridSize(dimensions.x * dimensions.z * dimensions.y / blockSize.x, 1);
 
-    //const dim3 blockSize(4, 4, 4);
-    //const dim3 gridSize(dimensions.x / 4, dimensions.y / 4, dimensions.z / 4);
-    
-    radioDepth<<< gridSize, blockSize >>>(cuDoseArr);
+    //radioDepth<<< gridSize, blockSize >>>(cuDoseArr);
+    voxelsOfInterest<<< gridSize, blockSize >>>(cuDoseArr);
 
     CHECK_FOR_CUDA_ERROR();
     printf("Hurray\n");
