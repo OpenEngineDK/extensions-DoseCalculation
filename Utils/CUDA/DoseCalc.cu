@@ -161,8 +161,9 @@ __global__ void radioDepth(float* output, const float3 source) {
     const unsigned int idx = blockIdx.x*blockDim.x + threadIdx.x;
 
     const uint3 coordinate = idx_to_co(idx, dims);
-
+   
     float rDepth = GetRadiologicalDepth(coordinate, source);
+
 
     if (idx < dims.x * dims.y * dims.z)
         output[idx] = rDepth;
@@ -175,17 +176,22 @@ __global__ void doseCalc(uint *d_output) {
 void RunDoseCalc(float* cuDoseArr, Beam oeBeam, int beamlet_x, int beamlet_y, float dx, float dy, float dz) {
     float3 source = make_float3(oeBeam.src[0], oeBeam.src[1], oeBeam.src[2]);
 
-    CudaBeam beam;
-    beam(oeBeam);
+    CudaBeam _beam;
+    _beam(oeBeam);
 
-    cudaMemcpyToSymbol(beam, &beam, sizeof(CudaBeam));
+    cudaMemcpyToSymbol(beam, &_beam, sizeof(CudaBeam));
     CHECK_FOR_CUDA_ERROR();
 
-    const dim3 blockSize(16, 16, 1);
-    const dim3 gridSize(dimensions.x * dimensions.z / blockSize.x, dimensions.y / blockSize.y);
 
-    radioDepth<<< gridSize, blockSize >>>((float*)cuDoseArr, 
+    /* const dim3 blockSize(16, 16, 1); */
+    /* const dim3 gridSize(dimensions.x * dimensions.z / blockSize.x, dimensions.y / blockSize.y); */
+    const dim3 blockSize(512, 1, 1);
+    const dim3 gridSize(dimensions.x * dimensions.z * dimensions.y / blockSize.x, 1);
+    
+
+    radioDepth<<< gridSize, blockSize >>>(cuDoseArr, 
                                         source);
+
 
     CHECK_FOR_CUDA_ERROR();
     printf("Hurray\n");

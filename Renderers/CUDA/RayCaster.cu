@@ -138,7 +138,7 @@ __global__ void rayCaster(uint *d_output, float* d_intense, uint imageW, uint im
                           float pm00, float pm11,
                           uint3 dims,
                           float3 scale) {
-    int maxD = dims.x;
+    //int maxD = dims.x;
     float tStep = 1.0f;
     
     float4 col = make_float4(0.0f);
@@ -166,43 +166,28 @@ __global__ void rayCaster(uint *d_output, float* d_intense, uint imageW, uint im
     if (hit) {
         //if (tnear < 0.0f) tnear = 0.0f;     // clamp to near plane
         //col.x = 1.0f;
-        float t = tnear;
+        //float t = tnear;
         //float t = tfar;
 
         for (float t=tnear;t<tfar;t+=tStep) {                        
-            //float3 pos = r.origin + r.direction*t;
-
             // descale it
-            //float3 spos = pos / scale;// * inversedd;
             float3 spos = scaledRay.origin + scaledRay.direction * t;
-            //pos = spos;
-            
 
             float sample = tex3D(tex, spos.x, spos.y, spos.z);
-            if (sample > minIt && sample <= maxIt) {
+            if (sample > minIt && sample <= minIt+maxIt) {
 
-                col = make_float4(sample);
+                //col = make_float4(sample);
+                col.x = sample;
 
-                /* float inte = 1.0f; */
-                /* uint3 posi = make_uint3(spos); */
-                /* int idx = co_to_idx(posi, dims); */
+                //float inte = 1.0f;
+                uint3 posi = make_uint3(floor(spos));
+                int idx = co_to_idx(posi, dims);
                 
-                /* if (idx < dims.x*dims.y*dims.z) {  */
-                /*     col.y = 0.0f;  */
-                /* } */
-                /*     col.y = 0.0; */
-                /*     //inte = d_intense[idx]; */
-                /* } else { */
-
-                /* } */
-                                
-
-                //col.x = inte;
-
+                if (idx < dims.x * dims.y * dims.z) {
+                    col.y = d_intense[idx];
+                }
                 break;
             }
-
-
         }
     }
 
@@ -213,12 +198,8 @@ __global__ void rayCaster(uint *d_output, float* d_intense, uint imageW, uint im
     // it. We're doing the calculations anyways. Might as well discard
     // them later and not slowdown every calculation.
 
-    //if ((x < imageW) && (y < imageH)) {
-        // write output color
     uint i = __umul24(y, imageW) + x;
     d_output[i] = rgbaFloatToInt(col);
-        ///}
-
     
 }
 
@@ -236,11 +217,11 @@ void RenderToPBO(int pbo, float* cuDoseArr, int width, int height, float* invMat
     const dim3 blockSize(16, 16, 1);
     const dim3 gridSize(width / blockSize.x, height / blockSize.y);
 
-    float3 po = make_float3(100,100,30);
-    uint3 poi = make_uint3(po);
-    int idx = co_to_idx(poi,dimensions1);
+    //float3 po = make_float3(100,100,30);
+    //uint3 poi = make_uint3(po);
+    //int idx = co_to_idx(poi,dimensions1);
     //printf("[%d] %d,%d,%d\n",idx,poi.x,poi.y,poi.z);
-    //printf(" %d\n",dimensions1.x*dimensions1.y*dimensions1.z);
+    //printf(" %d,%d,%d\n",dimensions1.x,dimensions1.y,dimensions1.z);
     
     //printf("cast: %d,%d,%d\n",dimensions1.x,dimensions1.y,dimensions1.z);
     rayCaster<<<gridSize, blockSize>>>(p,cuDoseArr,width,height,
