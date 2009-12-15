@@ -61,6 +61,7 @@ public:
     beamTrans->AddNode(bnode);
     // beamTrans->AddNode(beamCalibrate);
     // beamCalibrate->AddNode(bnode);
+    beamTrans->SetScale(Vector<3,float>(.5,300,.5));
     SetAngle(0);
 }
     virtual ~DoseTrigger() {}

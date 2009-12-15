@@ -32,6 +32,7 @@ Beam BeamNode::GetBeam() {
     TransformationNode* t = st.AncestorTransformationNode(this);
     if (t) {
         Vector<3,float> scl = t->GetScale();
+        src = ScaleVec(scl, src);
         p1 = ScaleVec(scl, p1);
         p2 = ScaleVec(scl, p2);
         p3 = ScaleVec(scl, p3);
