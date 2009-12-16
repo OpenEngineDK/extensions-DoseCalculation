@@ -107,19 +107,19 @@ __device__ float GetRadiologicalDepth(const uint3 coordinate){
 
     int texCoord[3] = {coordinate.x, coordinate.y, coordinate.z};
 
-    const int maxItr = 100;
+    //const int maxItr = 100;
 
     float radiologicalDepth = 0;
-    int itr = 0;
+    //int itr = 0;
 
-    while ((texCoord[0] != border[0] &&
-            texCoord[1] != border[1] &&
-            texCoord[2] != border[2]) &&
+    while (/*itr < maxItr && */
            /*0 <= texCoord[0] && texCoord[0] < dimensions.x &&
            0 <= texCoord[1] && texCoord[1] < dimensions.y &&
            0 <= texCoord[2] && texCoord[2] < dimensions.z && */
-           itr < maxItr){
-        itr++;
+           (texCoord[0] != border[0] &&
+            texCoord[1] != border[1] &&
+            texCoord[2] != border[2])){
+        //itr++;
 
         // is x less then y?
         int minIndex = (alpha[0] < alpha[1]) ? 0 : 1;
@@ -179,7 +179,7 @@ __global__ void voxelsOfInterest(float* output) {
                                       coordinate.z * scale.z);
    
     if (idx < dims.x * dims.y * dims.z)
-        output[idx] = (VoxelInsideBeam(fcoord)) ? 1 : 0;
+        output[idx] = (VoxelInsideBeam(fcoord)) ? 1.0f : 0.0f;
 }
 
 __global__ void doseCalc(uint *d_output) {
@@ -205,8 +205,28 @@ void RunDoseCalc(float* cuDoseArr, Beam oeBeam, int beamlet_x, int beamlet_y, fl
     //radioDepth<<< gridSize, blockSize >>>(cuDoseArr);
     voxelsOfInterest<<< gridSize, blockSize >>>(cuDoseArr);
 
-    CHECK_FOR_CUDA_ERROR();
-    printf("Hurray\n");
+    /*
+      // Voxel of interest debug print.
+    printf("Source\n");
+    printf("[%f, %f, %f]\n", _beam.src.x, _beam.src.y, _beam.src.z);
 
-    
+    printf("\nCone 1\n");
+    _beam.cone1.print();
+
+    printf("\nCone 1 inverse\n");
+    _beam.invCone1.print();
+
+    printf("\nCone 1 inverse * ((0, 0, 0) - source)\n");
+    float3 res = _beam.invCone1.mul(make_float3(0.0f) - _beam.src);
+    printf("[%f, %f, %f]\n", res.x, res.y, res.z);
+
+    printf("\nCone 2\n");
+    _beam.cone2.print();
+
+    printf("\nCone 2 inverse * ((0, 0, 0) - source)\n");
+    res = _beam.invCone2.mul(make_float3(0.0f) - _beam.src);
+    printf("[%f, %f, %f]\n", res.x, res.y, res.z);
+    */
+
+    CHECK_FOR_CUDA_ERROR();
 }
