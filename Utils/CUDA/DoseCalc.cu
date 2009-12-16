@@ -43,11 +43,8 @@ void SetupDoseCalc(float** cuDoseArr,
                    int w, int h, int d, // dimensions
                    float sw, float sh, float sd) // scale
 { 
-    
     cudaMalloc((void**)cuDoseArr, sizeof(float)*w*h*d);
     CHECK_FOR_CUDA_ERROR();
-
-    printf("malloc: %d,%d,%d\n",w,h,d);
 
     // Setup texture
     cudaChannelFormatDesc channelDesc = cudaCreateChannelDesc<float>();
@@ -57,16 +54,18 @@ void SetupDoseCalc(float** cuDoseArr,
     tex.addressMode[1] = cudaAddressModeClamp;
     tex.addressMode[2] = cudaAddressModeClamp;
     cudaBindTextureToArray(tex, GetVolumeArray(), channelDesc);
-
-    printf("SetupDoseCalc done\n");
-
     CHECK_FOR_CUDA_ERROR();
+
+    printf("Dimmensions: %d,%d,%d\n",w,h,d);
     dimensions = make_uint3(w, h, d);
     cudaMemcpyToSymbol(dims, &dimensions, sizeof(uint3));
     CHECK_FOR_CUDA_ERROR();
-    //scale = make_float3(sw, sh, sd);
+
+    printf("Scale: %f,%f,%f\n", sw, sh, sd);
     cudaMemcpyToSymbol(scale, &make_float3(sw, sh, sd), sizeof(float3));
     CHECK_FOR_CUDA_ERROR();
+
+    printf("SetupDoseCalc done\n");
 }
 
 __device__ bool VoxelInsideBeam(float3 point){
@@ -97,7 +96,7 @@ __device__ float GetRadiologicalDepth(const uint3 coordinate){
                              (vec.z > 0) ? 1 : -1};
 
     // The border texcoords (@TODO: Doesn't have to be calculated for
-    // every voxel, move outside later.)
+    // every voxel, make __constant__ and update before each run.)
     const int border[3] = {(vec.x > 0) ? dims.x : -1,
                            (vec.y > 0) ? dims.y : -1,
                            (vec.z > 0) ? dims.z : -1};
@@ -107,20 +106,15 @@ __device__ float GetRadiologicalDepth(const uint3 coordinate){
 
     int texCoord[3] = {coordinate.x, coordinate.y, coordinate.z};
 
-    //const int maxItr = 100;
-
     float radiologicalDepth = 0;
-    //int itr = 0;
 
-    while (/*itr < maxItr && */
-           /*0 <= texCoord[0] && texCoord[0] < dimensions.x &&
-           0 <= texCoord[1] && texCoord[1] < dimensions.y &&
-           0 <= texCoord[2] && texCoord[2] < dimensions.z && */
-           (texCoord[0] != border[0] &&
-            texCoord[1] != border[1] &&
-            texCoord[2] != border[2])){
-        //itr++;
-
+    while (0 <= texCoord[0] && texCoord[0] < dims.x &&
+           0 <= texCoord[1] && texCoord[1] < dims.y &&
+           0 <= texCoord[2] && texCoord[2] < dims.z
+           /*texCoord[0] != border[0] &&
+           texCoord[1] != border[1] &&
+           texCoord[2] != border[2]*/){
+        
         // is x less then y?
         int minIndex = (alpha[0] < alpha[1]) ? 0 : 1;
         // is the above min less then z?
@@ -150,6 +144,10 @@ __device__ float GetRadiologicalDepth(const uint3 coordinate){
     return radiologicalDepth;
 }
 
+/**
+ * Calculates the radiological depth of each voxel and stores it in
+ * the output array.
+ */
 __global__ void radioDepth(float* output) {
     // __constant__ uint3 dims
     // __constant__ float3 scale
@@ -165,6 +163,12 @@ __global__ void radioDepth(float* output) {
         output[idx] = rDepth;
 }
 
+/**
+ * Calculates for each voxel wether it is inside the beam or not.
+ *
+ * param output An array of the voxels interest. Contains 1.0 if the
+ * voxel is in the beam otherwise 0.0f.
+ */
 __global__ void voxelsOfInterest(float* output) {
     // __constant__ uint3 dims
     // __constant__ float3 scale
@@ -174,6 +178,7 @@ __global__ void voxelsOfInterest(float* output) {
 
     const uint3 coordinate = idx_to_co(idx, dims);
 
+    // @todo multiply by scale or divide?
     const float3 fcoord = make_float3(coordinate.x * scale.x,
                                       coordinate.y * scale.y,
                                       coordinate.z * scale.z);
@@ -182,14 +187,26 @@ __global__ void voxelsOfInterest(float* output) {
         output[idx] = (VoxelInsideBeam(fcoord)) ? 1.0f : 0.0f;
 }
 
-__global__ void doseCalc(uint *d_output) {
+/**
+ * Calculate the score of each beamlet, dependent on the voxels it hits.
+ *
+ * param input An array of radiological depths for each voxel.
+ * param output An boolean array of how each beamlet performed.
+ */
+__global__ void doseCalc(float* input, uint *output) {
     // __constant__ uint3 dims
     // __constant__ float3 scale
     // __constant__ CudaBeam beam;
-    
+
+    // Calculate the inverse matrix of the beams 2 convex cones.
+
+    // For each plane calculate wether the beam hits and in which
+    // voxels it does.
+
+    // Then rate the beam based on each voxel it hits.
 }
 
-void RunDoseCalc(float* cuDoseArr, Beam oeBeam, int beamlet_x, int beamlet_y, float dx, float dy, float dz) {
+void RunDoseCalc(float* cuDoseArr, Beam oeBeam, int beamlet_x, int beamlet_y, int kernel) {
     CudaBeam _beam;
     _beam(oeBeam);
 
@@ -202,8 +219,16 @@ void RunDoseCalc(float* cuDoseArr, Beam oeBeam, int beamlet_x, int beamlet_y, fl
     const dim3 blockSize(512, 1, 1);
     const dim3 gridSize(dimensions.x * dimensions.z * dimensions.y / blockSize.x, 1);
 
-    //radioDepth<<< gridSize, blockSize >>>(cuDoseArr);
-    voxelsOfInterest<<< gridSize, blockSize >>>(cuDoseArr);
+    switch(kernel){
+    case 0:
+        radioDepth<<< gridSize, blockSize >>>(cuDoseArr);
+        break;
+    case 1:
+        voxelsOfInterest<<< gridSize, blockSize >>>(cuDoseArr);
+        break;
+    default:
+        voxelsOfInterest<<< gridSize, blockSize >>>(cuDoseArr);
+    }
 
     /*
       // Voxel of interest debug print.
