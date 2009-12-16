@@ -52,7 +52,7 @@ public:
   , vp(vp)
   , bav(false)
 {
-    beamTrans->SetScale(Vector<3,float>(100,200,100));
+    beamTrans->SetScale(Vector<3,float>(10,300,10));
     ITexture3DBasePtr tex = dnode->GetIntensityTex();
     Vector<3,float> scale = dnode->GetScale();
     pivot->SetPosition(Vector<3,float>(tex->GetWidth()*scale[0]*0.5, tex->GetHeight()*scale[1]*0.5, tex->GetDepth()*scale[2]*0.5));
@@ -61,7 +61,6 @@ public:
     beamTrans->AddNode(bnode);
     // beamTrans->AddNode(beamCalibrate);
     // beamCalibrate->AddNode(bnode);
-    beamTrans->SetScale(Vector<3,float>(.5,300,.5));
     SetAngle(0);
 }
     virtual ~DoseTrigger() {}
