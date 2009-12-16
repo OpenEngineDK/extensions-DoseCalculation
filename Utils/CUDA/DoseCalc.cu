@@ -75,10 +75,17 @@ __device__ bool VoxelInsideBeam(float3 point){
         || beam.invCone2.mul(translatedPoint) >= 0;
 }
 
-__device__ float GetRadiologicalDepth(const uint3 coordinate){
+__device__ float GetRadiologicalDepth(const uint3 textureCoord){
     // __constant__ uint3 dims
     // __constant__ float3 scale
     // __constant__ CudaBeam beam;
+
+    // The texture coordinate is in buffer space. Not yet scaled.
+
+    // Coordinate in world space.
+    const float3 coordinate = make_float3(textureCoord.x * scale.x, 
+                                          textureCoord.y * scale.y, 
+                                          textureCoord.z * scale.z);
 
     // The vector from the coordinate to the source
     const float3 vec = beam.src - coordinate;
@@ -86,11 +93,11 @@ __device__ float GetRadiologicalDepth(const uint3 coordinate){
     const float dist = length(vec);
 
     // delta.x is the distance the beam has to travel between crossing
-    // zy-planes.
-    const float delta[3] = {dist * scale.x / vec.x,
-                            dist * scale.y / vec.y,
-                            dist * scale.z / vec.z};
-
+    // zy-planes. The distance is always positive.
+    const float delta[3] = {abs(dist / vec.x),
+                            abs(dist / vec.y),
+                            abs(dist / vec.z)};
+    
     const int texDelta[3] = {(vec.x > 0) ? 1 : -1,
                              (vec.y > 0) ? 1 : -1,
                              (vec.z > 0) ? 1 : -1};
@@ -104,7 +111,7 @@ __device__ float GetRadiologicalDepth(const uint3 coordinate){
     // The remaining distance to the next crossing.
     float alpha[3] = {delta[0], delta[1], delta[2]};
 
-    int texCoord[3] = {coordinate.x, coordinate.y, coordinate.z};
+    int texCoord[3] = {textureCoord.x, textureCoord.y, textureCoord.z};
 
     float radiologicalDepth = 0;
 
@@ -138,7 +145,7 @@ __device__ float GetRadiologicalDepth(const uint3 coordinate){
 
         // Add the radiological length for this step to the overall
         // depth.
-        radiologicalDepth = advance * tex3D(tex, texCoord[0], texCoord[1], texCoord[2]);
+        radiologicalDepth += advance * tex3D(tex, texCoord[0], texCoord[1], texCoord[2]);
     }
 
     return radiologicalDepth;
