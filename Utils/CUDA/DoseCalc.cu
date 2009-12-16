@@ -71,8 +71,9 @@ void SetupDoseCalc(float** cuDoseArr,
 
 __device__ bool VoxelInsideBeam(float3 point){
     // __constant__ CudaBeam beam
-    return beam.invCone1.mul(point - beam.src) >= 0
-        || beam.invCone2.mul(point - beam.src) >= 0;
+    float3 translatedPoint = point - beam.src;
+    return beam.invCone1.mul(translatedPoint) >= 0
+        || beam.invCone2.mul(translatedPoint) >= 0;
 }
 
 __device__ float GetRadiologicalDepth(const uint3 coordinate){
@@ -84,10 +85,6 @@ __device__ float GetRadiologicalDepth(const uint3 coordinate){
     const float3 vec = beam.src - coordinate;
 
     const float dist = length(vec);
-
-    // Instead of alpha between [0; 1] use the length of the
-    // vector. This is usefull for when we need the length travelede
-    // when accumulating radiological depth.
 
     // delta.x is the distance the beam has to travel between crossing
     // zy-planes.
@@ -106,7 +103,6 @@ __device__ float GetRadiologicalDepth(const uint3 coordinate){
                            (vec.z > 0) ? dims.z : -1};
     
     // The remaining distance to the next crossing.
-    //float3 alpha = delta;
     float alpha[3] = {delta[0], delta[1], delta[2]};
 
     int texCoord[3] = {coordinate.x, coordinate.y, coordinate.z};
@@ -194,8 +190,6 @@ __global__ void doseCalc(uint *d_output) {
 }
 
 void RunDoseCalc(float* cuDoseArr, Beam oeBeam, int beamlet_x, int beamlet_y, float dx, float dy, float dz) {
-    float3 source = make_float3(oeBeam.src[0], oeBeam.src[1], oeBeam.src[2]);
-
     CudaBeam _beam;
     _beam(oeBeam);
 

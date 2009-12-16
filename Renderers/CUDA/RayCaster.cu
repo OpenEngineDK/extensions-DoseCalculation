@@ -179,8 +179,7 @@ __global__ void rayCaster(uint *d_output, float* d_intense, uint imageW, uint im
                 int idx = co_to_idx(posi, dims);
                 
                 if (idx < dims.x * dims.y * dims.z) {
-                    col.y = 1.0;
-                    //col.y = d_intense[idx];
+                    col.y = d_intense[idx];
                 } 
                 
                 break;
