@@ -48,11 +48,11 @@ public:
   , pivot(new TransformationNode()) 
   , beamTrans(new TransformationNode())
   // , beamCalibrate(new TransformationNode())
-  , dist(600)
+  , dist(400)
   , vp(vp)
   , bav(false)
 {
-    beamTrans->SetScale(Vector<3,float>(10,300,10));
+    beamTrans->SetScale(Vector<3,float>(20,200,20));
     ITexture3DBasePtr tex = dnode->GetIntensityTex();
     Vector<3,float> scale = dnode->GetScale();
     pivot->SetPosition(Vector<3,float>(tex->GetWidth()*scale[0]*0.5, tex->GetHeight()*scale[1]*0.5, tex->GetDepth()*scale[2]*0.5));
