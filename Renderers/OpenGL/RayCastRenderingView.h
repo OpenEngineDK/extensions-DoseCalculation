@@ -43,12 +43,12 @@ namespace OpenGL {
     };
 
     WIDGET_START(RayCastRenderingView);
-    WIDGET_SLIDER(MIN, 
+    WIDGET_SLIDER("MIN", 
                   GetMinIntensity, 
                   SetMinIntensity,
                   CONST, 0,
                   CONST, 1);
-    WIDGET_SLIDER(MAX, 
+    WIDGET_SLIDER("MAX", 
                   GetMaxIntensity, 
                   SetMaxIntensity,
                   CONST, 0,

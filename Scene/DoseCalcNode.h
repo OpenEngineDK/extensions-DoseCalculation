@@ -99,11 +99,11 @@ namespace OpenEngine {
         };
 
         WIDGET_START(DoseCalcNode);
-        WIDGET_SLIDER(X, GetXPlaneCoord, SetXPlaneCoord, CONST, 0, METHOD, GetIntensityTex()->GetWidth);
+        WIDGET_SLIDER("X", GetXPlaneCoord, SetXPlaneCoord, CONST, 0, METHOD, GetIntensityTex()->GetWidth);
         // WIDGET_CSLIDER(X, GetXPlaneCoord, SetXPlaneCoord, DoseCalcNode, int, 1);
-        WIDGET_SLIDER(Y, GetYPlaneCoord, SetYPlaneCoord, CONST, 0, METHOD, GetIntensityTex()->GetHeight);
+        WIDGET_SLIDER("Y", GetYPlaneCoord, SetYPlaneCoord, CONST, 0, METHOD, GetIntensityTex()->GetHeight);
         // WIDGET_CSLIDER(Y, GetYPlaneCoord, SetYPlaneCoord, DoseCalcNode, int, 1);
-        WIDGET_SLIDER(Z, GetZPlaneCoord, SetZPlaneCoord, CONST, 0, METHOD, GetIntensityTex()->GetDepth);
+        WIDGET_SLIDER("Z", GetZPlaneCoord, SetZPlaneCoord, CONST, 0, METHOD, GetIntensityTex()->GetDepth);
         // WIDGET_CSLIDER(Z, GetZPlaneCoord, SetZPlaneCoord, DoseCalcNode, int, 1);
         WIDGET_STOP();
     }

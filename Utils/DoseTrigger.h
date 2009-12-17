@@ -122,9 +122,9 @@ private:
 };
 
 WIDGET_START(DoseTrigger);
-WIDGET_BUTTON(Calc, 0, DoCalc, TRIGGER);
-WIDGET_BUTTON(BAV, GetBeamAngleView, SetBeamAngleView, TOGGLE);
-WIDGET_SLIDER(BeamAngle, GetAngle, SetAngle, CONST, 0, CONST, 2*PI);
+WIDGET_BUTTON("Calc", 0, DoCalc, TRIGGER);
+WIDGET_BUTTON("BAV", GetBeamAngleView, SetBeamAngleView, TOGGLE);
+WIDGET_SLIDER("Beam angle", GetAngle, SetAngle, CONST, 0, CONST, 2*PI);
 WIDGET_STOP();
 
 } // NS Utils
