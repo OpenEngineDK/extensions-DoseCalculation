@@ -56,6 +56,7 @@ void SetupDoseCalc(float** cuDoseArr,
     cudaBindTextureToArray(tex, GetVolumeArray(), channelDesc);
     CHECK_FOR_CUDA_ERROR();
 
+    // Setup graphic card constants
     printf("Dimmensions: %d,%d,%d\n",w,h,d);
     dimensions = make_uint3(w, h, d);
     cudaMemcpyToSymbol(dims, &dimensions, sizeof(uint3));
@@ -68,24 +69,23 @@ void SetupDoseCalc(float** cuDoseArr,
     printf("SetupDoseCalc done\n");
 }
 
-__device__ bool VoxelInsideBeam(float3 point){
-    // __constant__ CudaBeam beam
-    float3 translatedPoint = point - beam.src;
-    return beam.invCone1.mul(translatedPoint) >= 0
-        || beam.invCone2.mul(translatedPoint) >= 0;
+__device__ float3 GetWorldCoord(uint3 textureCoord){
+    return make_float3(textureCoord.x * scale.x, 
+                       textureCoord.y * scale.y, 
+                       textureCoord.z * scale.z);
 }
 
-__device__ float GetRadiologicalDepth(const uint3 textureCoord){
+__device__ bool VoxelInsideBeamlet(float3 point, Matrix3x3 cone1, Matrix3x3 cone2){
+    // __constant__ CudaBeam beam
+    float3 translatedPoint = point - beam.src;
+    return cone1.mul(translatedPoint) >= 0
+        || cone2.mul(translatedPoint) >= 0;
+}
+
+__device__ float GetRadiologicalDepth(const uint3 textureCoord, const float3 coordinate){
     // __constant__ uint3 dims
     // __constant__ float3 scale
     // __constant__ CudaBeam beam;
-
-    // The texture coordinate is in buffer space. Not yet scaled.
-
-    // Coordinate in world space.
-    const float3 coordinate = make_float3(textureCoord.x * scale.x, 
-                                          textureCoord.y * scale.y, 
-                                          textureCoord.z * scale.z);
 
     // The vector from the coordinate to the source
     const float3 vec = beam.src - coordinate;
@@ -152,6 +152,20 @@ __device__ float GetRadiologicalDepth(const uint3 textureCoord){
 }
 
 /**
+ * Beam plane intersection along the z axis..
+ *
+ * params pn the intersection point of the n'th beam.
+ *
+ * returns bool Wether the beam hit the plane.
+ */
+__device__ bool BeamPlaneIntersection(float2& p1, float2& p2, float2& p3, float2& p4){
+    // __constant__ uint3 dims
+    // __constant__ float3 scale
+    // __constant__ CudaBeam beam;
+    return false;
+}
+
+/**
  * Calculates the radiological depth of each voxel and stores it in
  * the output array.
  */
@@ -162,9 +176,13 @@ __global__ void radioDepth(float* output) {
 
     const unsigned int idx = blockIdx.x*blockDim.x + threadIdx.x;
 
-    const uint3 coordinate = idx_to_co(idx, dims);
+    const uint3 texCoord = idx_to_co(idx, dims);
+
+    const float3 worldCoord = GetWorldCoord(texCoord);
    
-    float rDepth = GetRadiologicalDepth(coordinate);
+    // @TODO test if the point is inside the beam before calculating.
+
+    float rDepth = VoxelInsideBeamlet(worldCoord, beam.invCone1, beam.invCone2) ? GetRadiologicalDepth(texCoord, worldCoord) : 0.0f;
 
     if (idx < dims.x * dims.y * dims.z)
         output[idx] = rDepth;
@@ -183,15 +201,12 @@ __global__ void voxelsOfInterest(float* output) {
 
     const unsigned int idx = blockIdx.x*blockDim.x + threadIdx.x;
 
-    const uint3 coordinate = idx_to_co(idx, dims);
+    const uint3 texCoord = idx_to_co(idx, dims);
 
-    // @todo multiply by scale or divide?
-    const float3 fcoord = make_float3(coordinate.x * scale.x,
-                                      coordinate.y * scale.y,
-                                      coordinate.z * scale.z);
+    const float3 worldCoord = GetWorldCoord(texCoord);
    
     if (idx < dims.x * dims.y * dims.z)
-        output[idx] = (VoxelInsideBeam(fcoord)) ? 1.0f : 0.0f;
+        output[idx] = VoxelInsideBeamlet(worldCoord, beam.invCone1, beam.invCone2) ? 1.0f : 0.0f;
 }
 
 /**
@@ -205,12 +220,15 @@ __global__ void doseCalc(float* input, uint *output) {
     // __constant__ float3 scale
     // __constant__ CudaBeam beam;
 
+
     // Calculate the inverse matrix of the beams 2 convex cones.
 
     // For each plane calculate wether the beam hits and in which
     // voxels it does.
 
     // Then rate the beam based on each voxel it hits.
+
+
 }
 
 void RunDoseCalc(float* cuDoseArr, Beam oeBeam, int beamlet_x, int beamlet_y, int kernel) {
@@ -226,6 +244,10 @@ void RunDoseCalc(float* cuDoseArr, Beam oeBeam, int beamlet_x, int beamlet_y, in
     const dim3 blockSize(512, 1, 1);
     const dim3 gridSize(dimensions.x * dimensions.z * dimensions.y / blockSize.x, 1);
 
+    // start timer
+    //cutResetTimer(timer);
+	//cutStartTimer(timer);
+
     switch(kernel){
     case 0:
         radioDepth<<< gridSize, blockSize >>>(cuDoseArr);
@@ -236,6 +258,14 @@ void RunDoseCalc(float* cuDoseArr, Beam oeBeam, int beamlet_x, int beamlet_y, in
     default:
         voxelsOfInterest<<< gridSize, blockSize >>>(cuDoseArr);
     }
+
+	// Report timing
+    /*
+	cudaThreadSynchronize();
+	cutStopTimer(timer);  
+	double time = cutGetTimerValue( timer ); 
+	printf("time: %.4f ms.\n", time );
+    */
 
     /*
       // Voxel of interest debug print.
