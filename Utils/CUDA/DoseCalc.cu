@@ -9,23 +9,43 @@
 
 #include <Utils/CUDA/Matrix3x3.h>
 
+#define _DOSE_DEVICE_BORDER;
+
 struct CudaBeam {
     float3 src;
-    Matrix3x3 cone1;
+    float3 v1, v2, v3, v4;
     Matrix3x3 invCone1;
-    Matrix3x3 cone2;
     Matrix3x3 invCone2;
 
     __host__ void operator() (Beam b){
+        /**
+         * The beam is constructed by 4 vectorss setup like this
+         *
+         * v1----v2
+         *  | \  |
+         *  |  \ |
+         * v4----v3
+         *
+         * therefore the cones are given by [v1, v2, v3] and 
+         * [v1, v4, v3].
+         */
+
         src.x = b.src[0];
         src.y = b.src[1];
         src.z = b.src[2];
 
-        cone1(b.p1 - b.src, b.p2 - b.src, b.p3 - b.src);
-        invCone1 = cone1.getInverse();
+        v1 = make_float3(b.p1 - b.src);
+        v2 = make_float3(b.p2 - b.src);
+        v3 = make_float3(b.p3 - b.src);
+        v4 = make_float3(b.p4 - b.src);
 
-        cone2(b.p1 - b.src, b.p4 - b.src, b.p3 - b.src);
-        invCone2 = cone2.getInverse();
+        invCone1(b.p1 - b.src, b.p2 - b.src, b.p3 - b.src);
+        //invCone1(v1, v2, v3);
+        invCone1 = invCone1.getInverse();
+
+        invCone2(b.p1 - b.src, b.p4 - b.src, b.p3 - b.src);
+        //invCone1(v1, v4, v3);
+        invCone2 = invCone2.getInverse();
     }
 };
 
@@ -34,10 +54,14 @@ typedef unsigned int  uint;
 
 texture<float, 3, cudaReadModeElementType> tex;
 
+unsigned int timer = 0;
 uint3 dimensions;
 __constant__ uint3 dims;
 __constant__ float3 scale;
 __constant__ CudaBeam beam;
+#ifdef _DOSE_DEVICE_BORDER
+__constant__ uint3 border;
+#endif
 
 void SetupDoseCalc(float** cuDoseArr, 
                    int w, int h, int d, // dimensions
@@ -102,12 +126,13 @@ __device__ float GetRadiologicalDepth(const uint3 textureCoord, const float3 coo
                              (vec.y > 0) ? 1 : -1,
                              (vec.z > 0) ? 1 : -1};
 
-    // The border texcoords (@TODO: Doesn't have to be calculated for
-    // every voxel, make __constant__ and update before each run.)
+#ifndef _DOSE_DEVICE_BORDER
+    // The border texcoords
     const int border[3] = {(vec.x > 0) ? dims.x : -1,
                            (vec.y > 0) ? dims.y : -1,
                            (vec.z > 0) ? dims.z : -1};
-    
+#endif    
+
     // The remaining distance to the next crossing.
     float alpha[3] = {delta[0], delta[1], delta[2]};
 
@@ -115,12 +140,17 @@ __device__ float GetRadiologicalDepth(const uint3 textureCoord, const float3 coo
 
     float radiologicalDepth = 0;
 
-    while (0 <= texCoord[0] && texCoord[0] < dims.x &&
-           0 <= texCoord[1] && texCoord[1] < dims.y &&
-           0 <= texCoord[2] && texCoord[2] < dims.z
-           /*texCoord[0] != border[0] &&
+    while (
+#ifdef _DOSE_DEVICE_BORDER
+           texCoord[0] != border.x &&
+           texCoord[1] != border.y &&
+           texCoord[2] != border.z
+#else
+           texCoord[0] != border[0] &&
            texCoord[1] != border[1] &&
-           texCoord[2] != border[2]*/){
+           texCoord[2] != border[2]
+#endif
+           ){
         
         // is x less then y?
         int minIndex = (alpha[0] < alpha[1]) ? 0 : 1;
@@ -131,14 +161,14 @@ __device__ float GetRadiologicalDepth(const uint3 textureCoord, const float3 coo
         // the alpha with that value.
         float advance = alpha[minIndex];
 
-        // Add the delta value of the crossing dimension to prepare
-        // for the next crossing.
-        alpha[minIndex] += delta[minIndex];
-
         // Advance the alpha values.
         alpha[0] -= advance;
         alpha[1] -= advance;
         alpha[2] -= advance;
+
+        // Add the delta value of the crossing dimension to prepare
+        // for the next crossing.
+        alpha[minIndex] += delta[minIndex];
 
         // Advance the texture coordinates
         texCoord[minIndex] += texDelta[minIndex];
@@ -180,8 +210,6 @@ __global__ void radioDepth(float* output) {
 
     const float3 worldCoord = GetWorldCoord(texCoord);
    
-    // @TODO test if the point is inside the beam before calculating.
-
     float rDepth = VoxelInsideBeamlet(worldCoord, beam.invCone1, beam.invCone2) ? GetRadiologicalDepth(texCoord, worldCoord) : 0.0f;
 
     if (idx < dims.x * dims.y * dims.z)
@@ -232,12 +260,23 @@ __global__ void doseCalc(float* input, uint *output) {
 }
 
 void RunDoseCalc(float* cuDoseArr, Beam oeBeam, int beamlet_x, int beamlet_y, int kernel) {
+
+    // Copy beam to device
     CudaBeam _beam;
     _beam(oeBeam);
-
     cudaMemcpyToSymbol(beam, &_beam, sizeof(CudaBeam));
     CHECK_FOR_CUDA_ERROR();
 
+#ifdef _DOSE_DEVICE_BORDER
+    // Copy texture borders to device. (borders closest to the
+    // radioation source)
+    uint3 _border;
+    _border.x = abs(_beam.src.x) < abs(_beam.src.x - dimensions.x) ? 0 : dimensions.x;
+    _border.y = abs(_beam.src.y) < abs(_beam.src.y - dimensions.y) ? 0 : dimensions.y;
+    _border.z = abs(_beam.src.z) < abs(_beam.src.z - dimensions.z) ? 0 : dimensions.z;
+    cudaMemcpyToSymbol(border, &_border, sizeof(uint3));
+#endif
+    
     /* const dim3 blockSize(16, 16, 1); */
     /* const dim3 gridSize(dimensions.x * dimensions.z / blockSize.x, dimensions.y / blockSize.y); */
 

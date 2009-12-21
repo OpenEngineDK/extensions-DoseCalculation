@@ -9,6 +9,17 @@
  ******************************************************/
 
 #include <vector_functions.h>
+#include <Math/Vector.h>
+
+using namespace OpenEngine::Math;
+
+inline __host__ float3 make_float3(Vector<3, float> v){
+    float3 r;
+    r.x = v[0];
+    r.y = v[1];
+    r.z = v[2];
+    return r;
+}
 
 inline __host__ __device__ bool operator >= (float3 v, float f){
     return v.x >= f && v.y >= f && v.z >= f;
