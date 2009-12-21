@@ -90,6 +90,8 @@ void SetupDoseCalc(float** cuDoseArr,
     cudaMemcpyToSymbol(scale, &make_float3(sw, sh, sd), sizeof(float3));
     CHECK_FOR_CUDA_ERROR();
 
+    //cutCreateTimer( &timer);
+
     printf("SetupDoseCalc done\n");
 }
 
