@@ -19,9 +19,7 @@ struct CudaBeam {
          * [v1, v4, v3].
          */
 
-        src.x = b.src[0];
-        src.y = b.src[1];
-        src.z = b.src[2];
+        src = make_float3(b.src);
 
         v1 = make_float3(b.p1 - b.src);
         v2 = make_float3(b.p2 - b.src);
