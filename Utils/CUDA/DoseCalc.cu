@@ -180,7 +180,7 @@ __device__ bool BeamPlaneIntersection(int n, float2& from, float& to){
  */
 __device__ float RateVoxel(float delta, uint3 coord){
     return 1.0;
-})
+}
 
 /**
  * Calculates the radiological depth of each voxel and stores it in
