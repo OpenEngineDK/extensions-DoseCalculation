@@ -9,7 +9,7 @@
 
 #include <Utils/CUDA/CudaBeam.h>
 
-#define _DOSE_DEVICE_BORDER;
+#define _DOSE_DEVICE_BORDER
 
 typedef unsigned char uchar;
 typedef unsigned int  uint;
@@ -18,6 +18,7 @@ texture<float, 3, cudaReadModeElementType> tex;
 
 unsigned int timer = 0;
 uint3 dimensions;
+float3 scaling;
 __constant__ uint3 dims;
 __constant__ float3 scale;
 __constant__ CudaBeam beam;
@@ -49,7 +50,8 @@ void SetupDoseCalc(float** cuDoseArr,
     CHECK_FOR_CUDA_ERROR();
 
     printf("Scale: %f,%f,%f\n", sw, sh, sd);
-    cudaMemcpyToSymbol(scale, &make_float3(sw, sh, sd), sizeof(float3));
+    scaling = make_float3(sw, sh, sd);
+    cudaMemcpyToSymbol(scale, &scaling, sizeof(float3));
     CHECK_FOR_CUDA_ERROR();
 
     //cutCreateTimer( &timer);
@@ -146,18 +148,39 @@ __device__ float GetRadiologicalDepth(const uint3 textureCoord, const float3 coo
 }
 
 /**
- * Beam plane intersection along the z axis..
+ * Beam plane intersection along the z axis. The function returns the
+ * cornors of a rectangle in texture coords encompassing all the
+ * intersection point.
  *
- * params pn the intersection point of the n'th beam.
+ * param n The n'th plane along the z-axis.
+ * param from The lower left corner of the rectangle.
+ * param to The upper right corner of the rectangle.
  *
- * returns bool Wether the beam hit the plane.
+ * return bool Wether the beam hit the plane.
  */
-__device__ bool BeamPlaneIntersection(float2& p1, float2& p2, float2& p3, float2& p4){
+__device__ bool BeamPlaneIntersection(int n, float2& from, float& to){
     // __constant__ uint3 dims
     // __constant__ float3 scale
     // __constant__ CudaBeam beam;
+
+    // Calculate the intersection of each beam with the n'th plane and
+    // return them through the args.
+    
+    
+
     return false;
 }
+
+/**
+ * Rate each individual voxel based on the intensity, critical mass
+ * and tumor found in it, and weighted by the length of the beam
+ * passing through plus the amount of fotons deposited.
+ *
+ * return The rating.
+ */
+__device__ float RateVoxel(float delta, uint3 coord){
+    return 1.0;
+})
 
 /**
  * Calculates the radiological depth of each voxel and stores it in
@@ -227,7 +250,7 @@ void RunDoseCalc(float* cuDoseArr, Beam oeBeam, int beamlet_x, int beamlet_y, in
 
     // Copy beam to device
     CudaBeam _beam;
-    _beam(oeBeam);
+    _beam(oeBeam, scaling);
     cudaMemcpyToSymbol(beam, &_beam, sizeof(CudaBeam));
     CHECK_FOR_CUDA_ERROR();
 
@@ -235,9 +258,9 @@ void RunDoseCalc(float* cuDoseArr, Beam oeBeam, int beamlet_x, int beamlet_y, in
     // Copy texture borders to device. (borders closest to the
     // radioation source)
     uint3 _border;
-    _border.x = abs(_beam.src.x) < abs(_beam.src.x - dimensions.x) ? 0 : dimensions.x;
-    _border.y = abs(_beam.src.y) < abs(_beam.src.y - dimensions.y) ? 0 : dimensions.y;
-    _border.z = abs(_beam.src.z) < abs(_beam.src.z - dimensions.z) ? 0 : dimensions.z;
+    _border.x = abs(_beam.src.x) < abs(_beam.src.x - dimensions.x * scaling.x) ? 0 : dimensions.x;
+    _border.y = abs(_beam.src.y) < abs(_beam.src.y - dimensions.y * scaling.y) ? 0 : dimensions.y;
+    _border.z = abs(_beam.src.z) < abs(_beam.src.z - dimensions.z * scaling.z) ? 0 : dimensions.z;
     cudaMemcpyToSymbol(border, &_border, sizeof(uint3));
 #endif
     
@@ -251,6 +274,9 @@ void RunDoseCalc(float* cuDoseArr, Beam oeBeam, int beamlet_x, int beamlet_y, in
     //cutResetTimer(timer);
 	//cutStartTimer(timer);
 
+    // @TODO bind the radiological depth array as a texture after
+    // being filled? Might yield nothing.
+
     switch(kernel){
     case 0:
         radioDepth<<< gridSize, blockSize >>>(cuDoseArr);
@@ -259,7 +285,8 @@ void RunDoseCalc(float* cuDoseArr, Beam oeBeam, int beamlet_x, int beamlet_y, in
         voxelsOfInterest<<< gridSize, blockSize >>>(cuDoseArr);
         break;
     default:
-        voxelsOfInterest<<< gridSize, blockSize >>>(cuDoseArr);
+        radioDepth<<< gridSize, blockSize >>>(cuDoseArr);
+        //doseCalc<<< >>>();
     }
 
 	// Report timing
@@ -268,29 +295,6 @@ void RunDoseCalc(float* cuDoseArr, Beam oeBeam, int beamlet_x, int beamlet_y, in
 	cutStopTimer(timer);  
 	double time = cutGetTimerValue( timer ); 
 	printf("time: %.4f ms.\n", time );
-    */
-
-    /*
-      // Voxel of interest debug print.
-    printf("Source\n");
-    printf("[%f, %f, %f]\n", _beam.src.x, _beam.src.y, _beam.src.z);
-
-    printf("\nCone 1\n");
-    _beam.cone1.print();
-
-    printf("\nCone 1 inverse\n");
-    _beam.invCone1.print();
-
-    printf("\nCone 1 inverse * ((0, 0, 0) - source)\n");
-    float3 res = _beam.invCone1.mul(make_float3(0.0f) - _beam.src);
-    printf("[%f, %f, %f]\n", res.x, res.y, res.z);
-
-    printf("\nCone 2\n");
-    _beam.cone2.print();
-
-    printf("\nCone 2 inverse * ((0, 0, 0) - source)\n");
-    res = _beam.invCone2.mul(make_float3(0.0f) - _beam.src);
-    printf("[%f, %f, %f]\n", res.x, res.y, res.z);
     */
 
     CHECK_FOR_CUDA_ERROR();

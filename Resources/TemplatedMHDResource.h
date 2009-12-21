@@ -61,8 +61,6 @@ namespace OpenEngine {
                 // Return if data is already loaded.
                 if (this->data) return;
 
-                logger.info << "Loading texture" << logger.end;
-                
                 string raw_dir = File::Parent(this->filename);
                 char buf[255], tmp[255];
                 string rawfile;

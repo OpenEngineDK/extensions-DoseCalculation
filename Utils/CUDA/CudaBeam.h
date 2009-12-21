@@ -1,12 +1,19 @@
 #include <Utils/CUDA/Matrix3x3.h>
 
 struct CudaBeam {
+    // World coords.
     float3 src;
     float3 v1, v2, v3, v4;
     Matrix3x3 invCone1;
     Matrix3x3 invCone2;
 
-    __host__ void operator() (Beam b){
+    // World coords scaled into texture space. Precalculated prior to
+    // launching the kernel to avoid having all the threads compute
+    // the same thing.
+    float3 srcTex;
+    float3 v1Tex, v2Tex, v3Tex, v4Tex;
+
+    __host__ void operator() (Beam b, float3 scale){
         /**
          * The beam is constructed by 4 vectorss setup like this
          *
@@ -31,5 +38,11 @@ struct CudaBeam {
 
         invCone2(v1, v4, v3);
         invCone2 = invCone2.getInverse();
+
+        srcTex = src / scale;
+        v1Tex = v1 / scale;
+        v2Tex = v2 / scale;
+        v3Tex = v3 / scale;
+        v4Tex = v4 / scale;
     }
 };
