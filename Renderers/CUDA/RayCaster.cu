@@ -164,35 +164,33 @@ __global__ void rayCaster(uint *d_output, float* d_intense, uint imageW, uint im
     r.origin = r.origin / scale;
     r.direction = r.direction / scale;
 
+    float3 pos;
+    float sample;
+    bool hitVoxel = false;
     if (hit) {
         for (float t=tnear+tStep;t<tfar;t+=tStep) {                        
             // descale it
-            float3 spos = r.origin + r.direction * t;
+            pos = r.origin + r.direction * t;
 
-            float sample = tex3D(tex, spos.x, spos.y, spos.z);
+            sample = tex3D(tex, pos.x, pos.y, pos.z);
             if (sample > minIt && sample <= minIt+maxIt) {
-
-                col.x = sample;
-
-                //float inte = 1.0f;
-                uint3 posi = make_uint3(floor(spos));
-                int idx = co_to_idx(posi, dims);
-                
-                if (idx < dims.x * dims.y * dims.z) {
-                    col.y = d_intense[idx];
-                } 
-                
+                hitVoxel = true;
                 break;
             }
         }
     }
 
-
-    // Insert directly in loop instead of break.
-
-    // Make the size of the pbo big enough that we can't write outside
-    // it. We're doing the calculations anyways. Might as well discard
-    // them later and not slowdown every calculation.
+    if (hitVoxel){
+        
+        col.x = sample;
+        
+        uint3 posi = make_uint3(floor(pos));
+        int idx = co_to_idx(posi, dims);
+        
+        if (idx < dims.x * dims.y * dims.z) {
+            col.y = 0.2 * d_intense[idx];
+        }
+    }
 
     uint i = __umul24(y, imageW) + x;
     d_output[i] = rgbaFloatToInt(col);
