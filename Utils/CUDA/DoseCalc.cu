@@ -20,6 +20,7 @@ unsigned int timer = 0;
 uint3 dimensions;
 float3 scaling;
 __constant__ uint3 dims;
+__constant__ uint2 beamletDims;
 __constant__ float3 scale;
 __constant__ CudaBeam beam;
 #ifdef _DOSE_DEVICE_BORDER
@@ -155,20 +156,25 @@ __device__ float GetRadiologicalDepth(const uint3 textureCoord, const float3 coo
  * param n The n'th plane along the z-axis.
  * param from The lower left corner of the rectangle.
  * param to The upper right corner of the rectangle.
+ * param v1 The first vector spanning the beamlet.
+ * param v2 The second vector spanning the beamlet.
+ * param v3 The third vector spanning the beamlet.
+ * param v4 The fourth vector spanning the beamlet.
  *
  * return bool Wether the beam hit the plane.
  */
-__device__ bool BeamPlaneIntersection(int n, float2& from, float& to){
+__device__ bool BeamletPlaneIntersection(int n, uint2& from, uint2& to, 
+                                         float3 v1, float3 v2, float3 v3, float3 v4){
     // __constant__ uint3 dims
     // __constant__ float3 scale
     // __constant__ CudaBeam beam;
 
-    // Calculate the intersection of each beam with the n'th plane and
-    // return them through the args.
+    // Calculate the intersection of each beamlet with the n'th plane
+    // and return them through the args.
     
     
 
-    return false;
+    return true;
 }
 
 /**
@@ -224,6 +230,24 @@ __global__ void voxelsOfInterest(float* output) {
         output[idx] = VoxelInsideBeamlet(worldCoord, beam.invCone1, beam.invCone2) ? 1.0f : 0.0f;
 }
 
+__global__ void planesOfInterest(float* output){
+    // __constant__ uint3 dims
+    // __constant__ float3 scale
+    // __constant__ CudaBeam beam;
+
+    const unsigned int idx = blockIdx.x*blockDim.x + threadIdx.x;
+
+    const uint3 texCoord = idx_to_co(idx, dims);
+
+    const float3 worldCoord = GetWorldCoord(texCoord);
+
+    uint2 from, to;
+    bool hit = BeamletPlaneIntersection(texCoord.z, from, to, beam.v1Tex, beam.v2Tex, beam.v3Tex, beam.v4Tex);
+   
+    if (idx < dims.x * dims.y * dims.z)
+        output[idx] = hit ? 10.0f : 0.0f;
+}
+
 /**
  * Calculate the score of each beamlet, dependent on the voxels it hits.
  *
@@ -235,14 +259,37 @@ __global__ void doseCalc(float* input, uint *output) {
     // __constant__ float3 scale
     // __constant__ CudaBeam beam;
 
-
-    // Calculate the inverse matrix of the beams 2 convex cones.
+    // Calculate the local beamlet info, vectors are in texture coordinates.
+    float3 v1;
+    float3 v2;
+    float3 v3;
+    float3 v4;
+    Matrix3x3 invCone1;
+    invCone1(v1, v2, v3);
+    invCone1 = invCone1.getInverse();
+    Matrix3x3 invCone2;
+    invCone2(v1, v2, v3);
+    invCone2 = invCone2.getInverse();
 
     // For each plane calculate wether the beam hits and in which
     // voxels it does.
-
-    // Then rate the beam based on each voxel it hits.
-
+    float rating = 0;
+    uint2 from, to;
+    uint3 coord;
+    for (coord.z = 0; coord.z < dims.z; ++coord.z){
+        if (BeamletPlaneIntersection(coord.z, from, to, v1, v2, v3, v4)){
+            // Our beamlet intersect the plane. Lets see which voxels it hits.
+            for (coord.x = from.x; coord.x < to.x; ++coord.x){
+                for (coord.y = from.y; coord.y < to.y; ++coord.y){
+                    float3 c = make_float3(coord.x, coord.y, coord.z);
+                    if (VoxelInsideBeamlet(c, invCone1, invCone2)){
+                        // Then rate the beam based on each voxel it hits.
+                        
+                    }
+                }
+            }
+        }
+    }
 
 }
 
@@ -282,6 +329,9 @@ void RunDoseCalc(float* cuDoseArr, Beam oeBeam, int beamlet_x, int beamlet_y, in
         radioDepth<<< gridSize, blockSize >>>(cuDoseArr);
         break;
     case 1:
+        planesOfInterest<<< gridSize, blockSize >>>(cuDoseArr);
+        break;
+    case 2:
         voxelsOfInterest<<< gridSize, blockSize >>>(cuDoseArr);
         break;
     default:

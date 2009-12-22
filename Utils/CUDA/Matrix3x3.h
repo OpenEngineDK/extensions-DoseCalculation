@@ -17,7 +17,7 @@ struct Matrix3x3 {
         e[2].z = v2[2];
     }
 
-    __host__ void operator() (float3 v0, float3 v1, float3 v2){
+    __host__ __device__ void operator() (float3 v0, float3 v1, float3 v2){
         e[0].x = v0.x;
         e[0].y = v1.x;
         e[0].z = v2.x;
