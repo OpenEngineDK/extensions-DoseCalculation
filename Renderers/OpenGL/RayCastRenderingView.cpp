@@ -72,11 +72,11 @@ using namespace OpenEngine::Display;
                 IV.Transpose();
                 IV.ToArray(iva);
     
-    
+                /*
                 float dx = node->GetDoseTex()->GetWidth();
                 float dy = node->GetDoseTex()->GetHeight();
                 float dz = node->GetDoseTex()->GetDepth();
-                
+                */
                 
                 RenderToPBO(pbo,node->cuDoseArr,w,h,iva,pm(0,0),pm(1,1),
                             minIntensity,maxIntensity);

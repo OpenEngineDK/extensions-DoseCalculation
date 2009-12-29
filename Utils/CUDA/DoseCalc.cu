@@ -149,35 +149,6 @@ __device__ float GetRadiologicalDepth(const uint3 textureCoord, const float3 coo
 }
 
 /**
- * Beam plane intersection along the z axis. The function returns the
- * cornors of a rectangle in texture coords encompassing all the
- * intersection point.
- *
- * param n The n'th plane along the z-axis.
- * param from The lower left corner of the rectangle.
- * param to The upper right corner of the rectangle.
- * param v1 The first vector spanning the beamlet.
- * param v2 The second vector spanning the beamlet.
- * param v3 The third vector spanning the beamlet.
- * param v4 The fourth vector spanning the beamlet.
- *
- * return bool Wether the beam hit the plane.
- */
-__device__ bool BeamletPlaneIntersection(int n, uint2& from, uint2& to, 
-                                         float3 v1, float3 v2, float3 v3, float3 v4){
-    // __constant__ uint3 dims
-    // __constant__ float3 scale
-    // __constant__ CudaBeam beam;
-
-    // Calculate the intersection of each beamlet with the n'th plane
-    // and return them through the args.
-    
-    
-
-    return true;
-}
-
-/**
  * Rate each individual voxel based on the intensity, critical mass
  * and tumor found in it, and weighted by the length of the beam
  * passing through plus the amount of fotons deposited.
@@ -230,24 +201,6 @@ __global__ void voxelsOfInterest(float* output) {
         output[idx] = VoxelInsideBeamlet(worldCoord, beam.invCone1, beam.invCone2) ? 1.0f : 0.0f;
 }
 
-__global__ void planesOfInterest(float* output){
-    // __constant__ uint3 dims
-    // __constant__ float3 scale
-    // __constant__ CudaBeam beam;
-
-    const unsigned int idx = blockIdx.x*blockDim.x + threadIdx.x;
-
-    const uint3 texCoord = idx_to_co(idx, dims);
-
-    const float3 worldCoord = GetWorldCoord(texCoord);
-
-    uint2 from, to;
-    bool hit = BeamletPlaneIntersection(texCoord.z, from, to, beam.v1Tex, beam.v2Tex, beam.v3Tex, beam.v4Tex);
-   
-    if (idx < dims.x * dims.y * dims.z)
-        output[idx] = hit ? 10.0f : 0.0f;
-}
-
 /**
  * Calculate the score of each beamlet, dependent on the voxels it hits.
  *
@@ -259,7 +212,10 @@ __global__ void doseCalc(float* input, uint *output) {
     // __constant__ float3 scale
     // __constant__ CudaBeam beam;
 
+    
+
     // Calculate the local beamlet info, vectors are in texture coordinates.
+    /*
     float3 v1;
     float3 v2;
     float3 v3;
@@ -270,7 +226,9 @@ __global__ void doseCalc(float* input, uint *output) {
     Matrix3x3 invCone2;
     invCone2(v1, v2, v3);
     invCone2 = invCone2.getInverse();
+    */
 
+    /*
     // For each plane calculate wether the beam hits and in which
     // voxels it does.
     float rating = 0;
@@ -290,7 +248,7 @@ __global__ void doseCalc(float* input, uint *output) {
             }
         }
     }
-
+    */
 }
 
 void RunDoseCalc(float* cuDoseArr, Beam oeBeam, int beamlet_x, int beamlet_y, int kernel) {
@@ -314,8 +272,11 @@ void RunDoseCalc(float* cuDoseArr, Beam oeBeam, int beamlet_x, int beamlet_y, in
     /* const dim3 blockSize(16, 16, 1); */
     /* const dim3 gridSize(dimensions.x * dimensions.z / blockSize.x, dimensions.y / blockSize.y); */
 
-    const dim3 blockSize(512, 1, 1);
-    const dim3 gridSize(dimensions.x * dimensions.z * dimensions.y / blockSize.x, 1);
+    const dim3 voxelBlockSize(512, 1, 1);
+    const dim3 voxelGridSize(dimensions.x * dimensions.z * dimensions.y / voxelBlockSize.x, 1);
+
+    const dim3 beamletBlockSize(16,16,1);
+    const dim3 beamletGridSize();
 
     // start timer
     //cutResetTimer(timer);
@@ -326,16 +287,13 @@ void RunDoseCalc(float* cuDoseArr, Beam oeBeam, int beamlet_x, int beamlet_y, in
 
     switch(kernel){
     case 0:
-        radioDepth<<< gridSize, blockSize >>>(cuDoseArr);
+        radioDepth<<< voxelGridSize, voxelBlockSize >>>(cuDoseArr);
         break;
     case 1:
-        planesOfInterest<<< gridSize, blockSize >>>(cuDoseArr);
-        break;
-    case 2:
-        voxelsOfInterest<<< gridSize, blockSize >>>(cuDoseArr);
+        voxelsOfInterest<<< voxelGridSize, voxelBlockSize >>>(cuDoseArr);
         break;
     default:
-        radioDepth<<< gridSize, blockSize >>>(cuDoseArr);
+        radioDepth<<< voxelGridSize, voxelBlockSize >>>(cuDoseArr);
         //doseCalc<<< >>>();
     }
 
