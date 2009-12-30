@@ -4,7 +4,7 @@ CUDA_ADD_LIBRARY("CUDA_KERNELS"
   Renderers/CUDA/RayCaster.cu
   Utils/CUDA/DoseCalc.cu
   Utils/CUDA/DozeSetup.cu
-
+  Utils/CUDA/Superposition.cu
 )
 
 # Create the extension library
