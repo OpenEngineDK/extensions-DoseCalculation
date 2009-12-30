@@ -9,6 +9,7 @@
 
 #include <Utils/CUDA/CudaBeam.h>
 
+#include <Logging/Logger.h>
 #define _DOSE_DEVICE_BORDER
 
 typedef unsigned char uchar;
@@ -33,6 +34,8 @@ void SetupDoseCalc(float** cuDoseArr,
 { 
     cudaMalloc((void**)cuDoseArr, sizeof(float)*w*h*d);
     CHECK_FOR_CUDA_ERROR();
+
+    cudaMemset(*cuDoseArr, 0, sizeof(float)*w*h*d);
 
     // Setup texture
     cudaChannelFormatDesc channelDesc = cudaCreateChannelDesc<float>();

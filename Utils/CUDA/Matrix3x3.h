@@ -1,3 +1,6 @@
+#ifndef _DOSECALC_CUDA_MATRIX_H_
+#define _DOSECALC_CUDA_MATRIX_H_
+
 #include <Math/Vector.h>
 
 using namespace OpenEngine::Math;
@@ -73,3 +76,4 @@ struct Matrix3x3 {
         printf("[%f, %f, %f]]\n", e[2].x, e[2].y, e[2].z);
     }
 };
+#endif

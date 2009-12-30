@@ -1,8 +1,15 @@
+#ifndef _DOSECALC_CUDA_BEAM_H_
+#define _DOSECALC_CUDA_BEAM_H_
 #include <Utils/CUDA/Matrix3x3.h>
+#include <Utils/CUDA/float_util.hcu>
+#include <Scene/Beam.h>
+
+using OpenEngine::Scene::Beam;
 
 struct CudaBeam {
     // World coords.
     float3 src;
+    float3 axis;
     float3 v1, v2, v3, v4;
     Matrix3x3 invCone1;
     Matrix3x3 invCone2;
@@ -44,5 +51,8 @@ struct CudaBeam {
         v2Tex = v2 / scale;
         v3Tex = v3 / scale;
         v4Tex = v4 / scale;
+
+        axis = normalize(v1 + (v2 - v1) * 0.5 + v2 + (v3 - v2) * 0.5 - src);
     }
 };
+#endif
