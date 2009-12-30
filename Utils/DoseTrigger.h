@@ -48,7 +48,7 @@ public:
   , pivot(new TransformationNode()) 
   , beamTrans(new TransformationNode())
   // , beamCalibrate(new TransformationNode())
-  , dist(400)
+  , dist(500)
   , vp(vp)
   , bav(false)
 {
@@ -65,14 +65,15 @@ public:
 }
     virtual ~DoseTrigger() {}
     void DoCalc() { 
-        Beam b = bnode->GetBeam();
-        logger.info << "Beam: srcpos = " << b.src 
-                    << ",\nrect = (" << b.p1 
-                    << ", " << b.p2 << ", "
-                    << b.p3 << ", " 
-                    << b.p4 << ")" 
-                    << logger.end;
-        dnode->CalculateDose(bnode->GetBeam(), 1, 1); 
+        // Beam b = bnode->GetBeam();
+        // logger.info << "Beam: srcpos = " << b.src 
+        //             << ",\nrect = (" << b.p1 
+        //             << ", " << b.p2 << ", "
+        //             << b.p3 << ", " 
+        //             << b.p4 << ")" 
+        //             << logger.end;
+        // dnode->CalculateDose(bnode->GetBeam(), 1, 1); 
+        dnode->CalculateDose(bnode, 1, 1); 
     }
     TransformationNode* GetPivotNode() {
         return pivot;

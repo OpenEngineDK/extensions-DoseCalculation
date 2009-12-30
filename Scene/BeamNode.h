@@ -26,7 +26,7 @@ public:
     BeamNode(int beamlets_x, int beamlets_y);
     virtual ~BeamNode();
 
-    Beam GetBeam();
+    Beam GetBeam(float voiScale);
 
 private:
     Vector<3,float> ScaleVec(Vector<3,float> vec, Vector<3,float> scl);

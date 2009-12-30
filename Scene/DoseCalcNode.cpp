@@ -12,7 +12,9 @@
 #include <Logging/Logger.h>
 
 #include <Utils/CUDA/DoseCalc.h>
+#include <Utils/CUDA/Superposition.h>
 #include <Utils/CUDA/Doze.h>
+#include <Scene/BeamNode.h>
 
 using namespace OpenEngine::Geometry;
 
@@ -64,8 +66,22 @@ namespace OpenEngine {
             delete [] texCoords;
         }
 
-        void DoseCalcNode::CalculateDose(Beam beam, int beamlet_x, int beamlet_y) {
-            RunDoseCalc(cuDoseArr, beam, beamlet_x, beamlet_y);
+        void DoseCalcNode::CalculateDose(BeamNode* beam, int beamlet_x, int beamlet_y) {
+            // RunDoseCalc(cuDoseArr, beam, beamlet_x, beamlet_y, 0);
+            unsigned char fmap = 1;
+            Dose(&cuDoseArr, 
+                 beam->GetBeam(1.0), 
+                 beam->GetBeam(12.0),
+                 &fmap, 
+                 1,//beamlet_x, 
+                 1,//beamlet_y, 
+                 intensityTex->GetWidth(),
+                 intensityTex->GetHeight(),
+                 intensityTex->GetDepth(),
+                 scale[0],
+                 scale[1],
+                 scale[2]
+                 );
             logger.info << "RUN DONE" << logger.end;
         }
 

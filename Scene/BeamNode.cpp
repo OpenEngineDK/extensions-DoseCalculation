@@ -24,11 +24,12 @@ BeamNode::BeamNode(int beamlets_x, int beamlets_y)
 
 BeamNode::~BeamNode() {}
 
-Beam BeamNode::GetBeam() {
+Beam BeamNode::GetBeam(float voiScale) {
     SearchTool st;
     Vector<3,float> pos;
     Quaternion<float> rot;
-    Vector<3,float> src(0,1,0), p1(0.5,0,0.5), p2(0.5,0,-0.5), p3(-0.5,0,-0.5), p4(-0.5,0,0.5);
+    float offs = voiScale * 0.5;
+    Vector<3,float> src(0,1,0), p1(offs,0,offs), p2(offs,0,-offs), p3(-offs,0,-offs), p4(-offs,0,offs);
     TransformationNode* t = st.AncestorTransformationNode(this);
     if (t) {
         Vector<3,float> scl = t->GetScale();

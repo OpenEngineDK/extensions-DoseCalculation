@@ -30,6 +30,8 @@ namespace OpenEngine {
         using namespace Renderers;
         using namespace Widgets;
         
+        class BeamNode;
+
         class DoseCalcNode : public ISceneNode, public IListener<RenderingEventArg>  {
             OE_SCENE_NODE(DoseCalcNode, ISceneNode)
         public:
@@ -87,7 +89,7 @@ namespace OpenEngine {
             void SetShader(IShaderResourcePtr doseShader) { shader = doseShader; }
 
             void AddBeam(Beam beam);
-            void CalculateDose(Beam beam, int beamlet_x, int beamlet_y);
+            void CalculateDose(BeamNode* beam, int beamlet_x, int beamlet_y);
  
         private:
             inline void Init();
