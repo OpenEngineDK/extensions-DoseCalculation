@@ -106,8 +106,9 @@ __device__ float density(uint3 r) {
  */
 __device__ float sumAtt(float3 r, uint3 _tc) {
     float3 dir = beam.src - r ; 
+    float l = length(dir) * PIXEL_UNIT;
     int3 tc = make_int3(_tc.x, _tc.y, _tc.z);
-
+    
     // delta tc is determined by the sign of the direction.
     const int3 dtc = make_int3(__float2int_rn(dir.x / fabs(dir.x)),
                                __float2int_rn(dir.y / fabs(dir.y)),
@@ -139,7 +140,7 @@ __device__ float sumAtt(float3 r, uint3 _tc) {
         float alpha = fmin(alphas.x, alphas.y);
         alpha = fmin(alpha, alphas.z);
         
-        sum += attenuation(make_uint3(tc.x, tc.y, tc.z)) * length((alpha - prevAlpha) *  dir ) * PIXEL_UNIT; 
+        sum += attenuation(make_uint3(tc.x, tc.y, tc.z)) * (alpha - prevAlpha) * l; 
         prevAlpha = alpha;
 
         // Find minimal coordinates. Note that several coordinates

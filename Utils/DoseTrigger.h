@@ -115,9 +115,10 @@ private:
         Quaternion<float> q;
         Vector<3,float> p;
         beamTrans->GetAccumulatedTransformations(&p, &q);
-        Quaternion<float> q1(0.5*PI, Vector<3,float>(-1.0,0.0,0.0));
+        Quaternion<float> q1(PI, Vector<3,float>(0.0,1.0,0.0));
+        Quaternion<float> q2(0.5*PI, Vector<3,float>(-1.0,0.0,0.0));
         vp->GetViewingVolume()->SetPosition(p);
-        vp->GetViewingVolume()->SetDirection(q*q1);
+        vp->GetViewingVolume()->SetDirection(q*q1*q2);
     }
 
 };
