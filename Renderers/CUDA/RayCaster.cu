@@ -140,6 +140,12 @@ __device__ Ray RayForPoint(uint u, uint v, uint width, uint height,float pm00, f
     return rr;
 }
 
+__device__ float4 colorblend(float4 col, float i) {
+    float4 icol = make_float4(i, 0.0, col.x, 1.0);
+    // float4 icol = make_float4(i, i, i, 1.0);
+    return icol;//col + 0.5 * icol; 
+}
+
 __global__ void rayCaster(uint *d_output, float* d_intense, uint imageW, uint imageH,
                           float minIt, float maxIt,
                           float transferOffset, float transferScale,
@@ -193,20 +199,52 @@ __global__ void rayCaster(uint *d_output, float* d_intense, uint imageW, uint im
     }
 
     uint i = __umul24(y, imageW) + x;
-    d_output[i] = rgbaFloatToInt(col);
+    d_output[i] = rgbaFloatToInt(col);    
     
+    // ----- slice view ray caster code ...   -----
+    // float tStep = 1.0f;
+    
+    // float4 col = make_float4(0.0f);
+    
+    // uint x = __umul24(blockIdx.x, blockDim.x) + threadIdx.x;
+    // uint y = __umul24(blockIdx.y, blockDim.y) + threadIdx.y;
+    // Ray r = RayForPoint(x,y,imageW,imageH,pm00,pm11);
+    // // optimize by making this constant
+    // Ray rforw = RayForPoint(imageW*0.5, imageH*0.5,imageW,imageH,pm00,pm11);
+
+    // // We got the ray now, lets intersect it with the box..
+    // float tnear, tfar;
+	// int hit = intersectBox(r, &tnear, &tfar);
+
+    // float dist = 800.0 * minIt / ( r.direction.x * rforw.direction.x 
+    //                        + r.direction.y * rforw.direction.y 
+    //                        + r.direction.z * rforw.direction.z);
+
+    // r.origin = r.origin / scale;
+    // r.direction = r.direction / scale;
+
+    // float3 spos = r.origin + r.direction * dist;  
+    // if (hit && spos.x >= 0 && spos.x < dims.x &&
+    //     spos.y >= 0 && spos.y < dims.y && 
+    //     spos.z >= 0 && spos.z < dims.z) {
+    //     float sample = tex3D(tex, spos.x, spos.y, spos.z);
+    //     col.x = col.y = col.z = sample;
+    //     uint3 posi = make_uint3(floor(spos));
+    //     int idx = co_to_idx(posi, dims);
+    //     col = colorblend(col, d_intense[idx]*maxIt);
+    //     // col.y += d_intense[idx];
+    // }
+    // uint i = __umul24(y, imageW) + x;
+    // d_output[i] = rgbaFloatToInt(col);    
 }
 
 void RenderToPBO(int pbo, float* cuDoseArr, int width, int height, float* invMat, float pm00, float pm11, float minIt, float maxIt) {
     cudaMemcpyToSymbol(c_invViewMatrix, invMat, sizeof(float4)*4);
     CHECK_FOR_CUDA_ERROR();
 
- 
     uint* p;
     cudaGLMapBufferObject((void**)&p,pbo);
     CHECK_FOR_CUDA_ERROR();
-
-
     
     const dim3 blockSize(16, 16, 1);
     const dim3 gridSize(width / blockSize.x, height / blockSize.y);
