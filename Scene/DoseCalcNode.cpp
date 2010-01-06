@@ -74,14 +74,7 @@ namespace OpenEngine {
                  beam->GetBeam(12.0),
                  &fmap, 
                  1,//beamlet_x, 
-                 1,//beamlet_y, 
-                 intensityTex->GetWidth(),
-                 intensityTex->GetHeight(),
-                 intensityTex->GetDepth(),
-                 scale[0],
-                 scale[1],
-                 scale[2]
-                 );
+                 1);//beamlet_y, 
             logger.info << "RUN DONE" << logger.end;
         }
 

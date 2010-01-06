@@ -20,6 +20,7 @@ unsigned int timer = 0;
 uint3 dimensions;
 uint2 beamletDimensions;
 float3 scaling;
+uint size;
 __constant__ uint3 dims;
 __constant__ uint2 beamletDims;
 __constant__ float2 invBeamletDims;
@@ -73,6 +74,7 @@ void SetupDoseCalc(float** cuDoseArr,
     // Setup graphic card constants
     printf("Dimmensions: %d,%d,%d\n",w,h,d);
     dimensions = make_uint3(w, h, d);
+    size = w * h * d;
     cudaMemcpyToSymbol(dims, &dimensions, sizeof(uint3));
     CHECK_FOR_CUDA_ERROR();
 
@@ -607,41 +609,21 @@ __host__ void Dose(float** out,                      // result dose map
                    Beam oebeam,                      // beam
                    Beam voi,                         // voxels of interest
                    uchar* fmap,                      // fluence map
-                   uint beamlets_x, uint beamlets_y, // # beamlets
-                   int w, int h, int d,              // dimensions
-                   float sw, float sh, float sd)     // scale
+                   uint beamlets_x, uint beamlets_y)     // scale
 {
-    // Setup texture
-    cudaChannelFormatDesc channelDesc = cudaCreateChannelDesc<float>();
-    intensityTex.normalized = false;
-    intensityTex.filterMode = cudaFilterModeLinear;
-    intensityTex.addressMode[0] = cudaAddressModeClamp;
-    intensityTex.addressMode[1] = cudaAddressModeClamp;
-    intensityTex.addressMode[2] = cudaAddressModeClamp;
-    cudaBindTextureToArray(intensityTex, GetVolumeArray(), channelDesc);
-    CHECK_FOR_CUDA_ERROR();
-
     // allocate TERMA array
     float* _terma = NULL;
-    cudaMalloc((void**)&_terma, sizeof(float)*w*h*d);
-    cudaMemset(_terma, 0, sizeof(float)*w*h*d);
+    cudaMalloc((void**)&_terma, sizeof(float) * size);
+    cudaMemset(_terma, 0, sizeof(float) * size);
     CHECK_FOR_CUDA_ERROR();
 
     // copy constants
-    uint3 dim = make_uint3(w, h, d);
-    cudaMemcpyToSymbol(dims, &dim, sizeof(uint3));
-    CHECK_FOR_CUDA_ERROR();
-    
-    float3 scl = make_float3(sw, sh, sd);
-    cudaMemcpyToSymbol(scale, &scl, sizeof(float3));
-    CHECK_FOR_CUDA_ERROR();
-
     float e = 1.0f; // initial energy is 1.0 (100%)
     cudaMemcpyToSymbol(energy, &e, sizeof(float));
     CHECK_FOR_CUDA_ERROR();
 
     CudaBeam _beam;
-    _beam(oebeam, scl);
+    _beam(oebeam, scale);
     cudaMemcpyToSymbol(beam, &_beam, sizeof(CudaBeam));
     CHECK_FOR_CUDA_ERROR();
     
@@ -663,10 +645,10 @@ __host__ void Dose(float** out,                      // result dose map
     // const dim3 gridSize(w * h * d  / blockSize.x, 1, 1);
     // const dim3 gridSize(itsz / blockSize.x, 1, 1);
     const dim3 gridSize(100, 1, 1);
-    const uint iter = w*h*d / ( gridSize.x * blockSize.x);
+    const uint iter = size / ( gridSize.x * blockSize.x);
     logger.info << "gridSize.x = " << gridSize.x << logger.end; 
     logger.info << "blockSize.x = " << blockSize.x << logger.end; 
-    logger.info << "w*h*d: " << w*h*d << logger.end;
+    logger.info << "w*h*d: " << size << logger.end;
     unsigned int offset = 0;
     logger.info << "Run TERMA kernel in " << iter << " iterations..." << logger.end; 
     for (unsigned int i = 0; i < iter; ++i) {
@@ -678,13 +660,14 @@ __host__ void Dose(float** out,                      // result dose map
     }
     // terma<<< gridSize, blockSize >>>(0, _terma, _fmap);
 
-    float* test = new float[w*h*d];
-    cudaMemcpy((void*)test, (void*)_terma, w * h * d * sizeof(float), cudaMemcpyDeviceToHost);
+    float* test = new float[size];
+    cudaMemcpy((void*)test, (void*)_terma, size * sizeof(float), cudaMemcpyDeviceToHost);
     CHECK_FOR_CUDA_ERROR();
 
     // bind the terma array to a texture (expensive memory copies can be optimized away...)
     cudaArray* tarr;
-    cudaExtent ext = make_cudaExtent(w,h,d);
+    cudaExtent ext = make_cudaExtent(dimensions.x, dimensions.y, dimensions.z);
+    cudaChannelFormatDesc channelDesc = cudaCreateChannelDesc<float>();
     cudaMalloc3DArray(&tarr, &channelDesc, ext);
     CHECK_FOR_CUDA_ERROR();
     cudaMemcpy3DParms copyParams = {0};
@@ -701,7 +684,7 @@ __host__ void Dose(float** out,                      // result dose map
     CHECK_FOR_CUDA_ERROR();
 
     // set voxels of interest (this is simply a larger cone beam).
-    _beam(voi, scl);
+    _beam(voi, scale);
     cudaMemcpyToSymbol(beam, &_beam, sizeof(CudaBeam));
     CHECK_FOR_CUDA_ERROR();
     
@@ -723,21 +706,21 @@ __host__ void Dose(float** out,                      // result dose map
     }
     // print some dose values for debugging purposes.
     int s = 5;
-    for (int i = w/2-s/2; i < w/2 + s/2; ++i) {
-        for (int j = h/2 - s/2; j < h/2 + s/2; ++j) {
-            for (int k = d/2-s/2; k < d/2 + s/2; ++k) {
-                logger.info << "terma: " << test[i + j*w + k*w*h] << logger.end; 
+    for (uint i = dimensions.x/2-s/2; i < dimensions.x/2 + s/2; ++i) {
+        for (uint j = dimensions.y/2 - s/2; j < dimensions.y/2 + s/2; ++j) {
+            for (uint k = dimensions.z/2-s/2; k < dimensions.z/2 + s/2; ++k) {
+                logger.info << "terma: " << test[i + j*dimensions.x + k*dimensions.x*dimensions.y] << logger.end; 
             }
             
         }
         
     }
-    cudaMemcpy((void*)test, (void*)*out, w * h * d * sizeof(float), cudaMemcpyDeviceToHost); 
+    cudaMemcpy((void*)test, (void*)*out, size * sizeof(float), cudaMemcpyDeviceToHost); 
     CHECK_FOR_CUDA_ERROR();
-    for (int i = w/2-s/2; i < w/2 + s/2; ++i) {
-        for (int j = h/2 - s/2; j < h/2 + s/2; ++j) {
-            for (int k = d/2-s/2; k < d/2 + s/2; ++k) {
-                logger.info << "depos: " << test[i + j*w + k*w*h] << logger.end; 
+    for (uint i = dimensions.x/2-s/2; i < dimensions.x/2 + s/2; ++i) {
+        for (uint j = dimensions.y/2 - s/2; j < dimensions.y/2 + s/2; ++j) {
+            for (uint k = dimensions.z/2-s/2; k < dimensions.z/2 + s/2; ++k) {
+                logger.info << "depos: " << test[i + j * dimensions.x + k * dimensions.x * dimensions.y] << logger.end; 
             }
             
         }

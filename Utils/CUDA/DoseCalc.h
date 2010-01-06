@@ -19,9 +19,7 @@ void Dose(float** out,
           Beam oebeam,
           Beam voi,
           unsigned char* fmap, 
-          uint beamlets_x, uint beamlets_y,
-          int w, int h, int d,
-          float sw, float sh, float sd);
+          uint beamlets_x, uint beamlets_y);
 
 
 #endif
