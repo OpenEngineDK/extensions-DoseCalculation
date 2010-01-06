@@ -22,7 +22,7 @@ struct CudaBeam {
 
     __host__ void operator() (Beam b, float3 scale){
         /**
-         * The beam is constructed by 4 vectorss setup like this
+         * The beam is constructed by 4 vectors setup like this
          *
          * v1----v2
          *  | \  |

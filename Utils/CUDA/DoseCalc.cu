@@ -217,22 +217,43 @@ __global__ void rateBeamlet(float* input, uint *output) {
     // __constant__ uint2 beamletDims;
     // __constant__ uint2 invBeamletDims;
 
-    uint coordXStart = blockIdx.x * blockDim.x + threadIdx.x;
-    uint coordYStart = blockIdx.y * blockDim.y + threadIdx.y;
-    uint coordXEnd = coordXStart + 1;
-    uint coordYEnd = coordYStart + 1;
-
+    uint coordX = blockIdx.x * blockDim.x + threadIdx.x;
+    uint coordY = blockIdx.y * blockDim.y + threadIdx.y;
+    /**
+     * The beam is constructed by 4 vectors setup like this
+     *
+     * v1----v2
+     *  | \  |
+     *  |  \ |
+     * v4----v3
+     *
+     * And weighted along the local x axis like this
+     *
+     * v1--w1-w2--v2
+     *  | \       |
+     *  |   \     |
+     *  |     \   |
+     *  |       \ |
+     * v4--w4-w3--v3
+     *
+     * w1 = (1-xStart/dims) * v1 + xStart/dims * v2
+     * w2 = (1-xEnd/dims) * v1 + xEnd/dims * v2
+     * and the same for w3 and w4.
+     */
+    
     // Calculate the local beamlet info, vectors are in texture coordinates.
-    float3 v1;
-    float3 v2;
-    float3 v3;
-    float3 v4;
-    Matrix3x3 invCone1;
-    invCone1(v1, v2, v3);
-    invCone1 = invCone1.getInverse();
-    Matrix3x3 invCone2;
-    invCone2(v1, v2, v3);
-    invCone2 = invCone2.getInverse();
+    uint2 coordStart = make_uint2(coordX, coordY);
+    uint2 coordEnd = make_uint2(coordStart.x + 1, coordStart.y + 1);
+
+    float3 w1 = (1 - coordStart.x/beamletDims.x) * beam.v1 + coordStart.x/beamletDims.x * beam.v2;
+    float3 w2 = (1 - coordEnd.x/beamletDims.x) * beam.v1 + coordEnd.x/beamletDims.x * beam.v2;
+    float3 w3 = (1 - coordStart.x/beamletDims.x) * beam.v3 + coordStart.x/beamletDims.x * beam.v4;
+    float3 w4 = (1 - coordEnd.x/beamletDims.x) * beam.v3 + coordEnd.x/beamletDims.x * beam.v4;
+
+    float3 v1 = (1 - coordStart.y/beamletDims.y) * w1 + coordStart.y/beamletDims.y * w2;
+    float3 v2 = (1 - coordEnd.y/beamletDims.y) * w1 + coordEnd.y/beamletDims.y * w2;
+    float3 v3 = (1 - coordStart.y/beamletDims.y) * w3 + coordStart.y/beamletDims.y * w4;
+    float3 v4 = (1 - coordEnd.y/beamletDims.y) * w3 + coordEnd.y/beamletDims.y * w4;
 }
 
 void RunDoseCalc(float* cuDoseArr, Beam oeBeam, int beamlet_x, int beamlet_y, int kernel) {
