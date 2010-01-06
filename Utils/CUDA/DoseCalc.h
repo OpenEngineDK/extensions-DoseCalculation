@@ -10,10 +10,12 @@ typedef unsigned int  uint;
 
 void SetupDoseCalc(float** cuDoseArr, 
                    int w, int h, int d, 
-                   float sw, float sh, float sd,
-                   uint bw = 1, uint bh = 1);
+                   float sw, float sh, float sd);
 
-void RunDoseCalc(float* cuDoseArr, Beam beam, int beamlet_x, int beamlet_y, int kernel = 1);
+void RunDoseCalc(float* cuDoseArr, 
+                 Beam beam, 
+                 int beamlet_x, int beamlet_y, 
+                 int kernel = 1);
 
 void Dose(float** out,
           Beam oebeam,

@@ -11,7 +11,7 @@
 
 #include <Logging/Logger.h>
 #define _DOSE_DEVICE_BORDER
-#define PIXEL_UNIT 0.01 // one pixel = 1 cm^3
+#define PIXEL_UNIT 0.01f // one pixel = 1 cm^3
 
 texture<float, 3, cudaReadModeElementType> intensityTex;
 texture<float, 3, cudaReadModeElementType> termaTex;
@@ -53,8 +53,7 @@ void print(float3 v){
 
 void SetupDoseCalc(float** cuDoseArr, 
                    int w, int h, int d, // dimensions
-                   float sw, float sh, float sd, // scale
-                   uint bw, uint bh) // beamlet dimensions
+                   float sw, float sh, float sd) // scale
 { 
     cudaMalloc((void**)cuDoseArr, sizeof(float)*w*h*d);
     CHECK_FOR_CUDA_ERROR();
@@ -83,12 +82,6 @@ void SetupDoseCalc(float** cuDoseArr,
     cudaMemcpyToSymbol(scale, &scaling, sizeof(float3));
     CHECK_FOR_CUDA_ERROR();
 
-    beamletDimensions = make_uint2(bw, bh);
-    cudaMemcpyToSymbol(beamletDims, &beamletDimensions, sizeof(uint3));
-    float2 invBeamDims = make_float2(1.0f / beamletDimensions.x, 1.0f / beamletDimensions.y);
-    cudaMemcpyToSymbol(invBeamletDims, &invBeamDims, sizeof(uint3));
-    CHECK_FOR_CUDA_ERROR();
-
     //cutCreateTimer( &timer);
 
     printf("SetupDoseCalc done\n");
@@ -100,9 +93,9 @@ void SetupDoseCalc(float** cuDoseArr,
  * return the central position of a voxel.
  */
 __device__ float3 texToVec(uint3 tex) {
-    return make_float3(tex.x * scale.x + 0.5 * scale.x,
-                       tex.y * scale.y + 0.5 * scale.y,
-                       tex.z * scale.z + 0.5 * scale.z);
+    return make_float3(tex.x * scale.x + 0.5f * scale.x,
+                       tex.y * scale.y + 0.5f * scale.y,
+                       tex.z * scale.z + 0.5f * scale.z);
 }
 
 /**
@@ -206,7 +199,7 @@ __device__ float GetRadiologicalDepth(const uint3 textureCoord, const float3 coo
  * Account for any prior changes made to the voxel data
  */
 __device__ float hounsfield(uint3 r) {
-    return (tex3D(intensityTex, r.x, r.y, r.z) * 2000.0 - 1000.0);
+    return (tex3D(intensityTex, r.x, r.y, r.z) * 2000.0f - 1000.0f);
 }
 
 /**
@@ -220,8 +213,8 @@ __device__ float hounsfield(uint3 r) {
  */
 __device__ float attenuation(uint3 r) {
     // lets just use 0.135 for mu_water(E=171keV) ...
-    const float mu_water = 0.135;
-    return (hounsfield(r) / 1000.0) * mu_water + mu_water;
+    const float mu_water = 0.135f;
+    return (hounsfield(r) / 1000.0f) * mu_water + mu_water;
 }
 
 /**
@@ -229,7 +222,7 @@ __device__ float attenuation(uint3 r) {
  */
 __device__ float density(uint3 r) {
     // not quite sure how relative density relates to the HU. 
-    return (attenuation(r) / 0.135) * PIXEL_UNIT ;
+    return (attenuation(r) / 0.135f) * PIXEL_UNIT ;
 }
 
 /**
@@ -251,8 +244,8 @@ __device__ float sumAtt(float3 r, uint3 _tc) {
     float3 planes = make_float3(scale.x * (tc.x + (dtc.x + 1) / 2),
                                 scale.y * (tc.y + (dtc.y + 1) / 2),
                                 scale.z * (tc.z + (dtc.z + 1) / 2));
-    float prevAlpha = 0.0;
-    float sum = 0.0;
+    float prevAlpha = 0.0f;
+    float sum = 0.0f;
 
     // while we are still inside the voxel boundaries ... 
     while (tc.x >= 0 && tc.x < dims.x &&
@@ -347,8 +340,8 @@ __device__ float rad(uint3 tc1, float3 vec1, uint3 tc2, float3 vec2) {
     float3 planes = make_float3(scale.x * (tc.x + (dtc.x + 1) / 2),
                                 scale.y * (tc.y + (dtc.y + 1) / 2),
                                 scale.z * (tc.z + (dtc.z + 1) / 2));
-    float prevAlpha = 0.0;
-    float sum = 0.0;
+    float prevAlpha = 0.0f;
+    float sum = 0.0f;
 
     // while we are still inside the voxel boundaries ... 
     while (tc.x != tc2.x &&
@@ -546,10 +539,16 @@ __global__ void rateBeamlet(float* input, uint *output) {
 
 void RunDoseCalc(float* cuDoseArr, Beam oeBeam, int beamlet_x, int beamlet_y, int kernel) {
 
-    // Copy beam to device
+    // Copy beam and beamlet info to device
     CudaBeam _beam;
     _beam(oeBeam, scaling);
     cudaMemcpyToSymbol(beam, &_beam, sizeof(CudaBeam));
+    CHECK_FOR_CUDA_ERROR();
+
+    beamletDimensions = make_uint2(beamlet_x, beamlet_y);
+    cudaMemcpyToSymbol(beamletDims, &beamletDimensions, sizeof(uint2));
+    float2 invBeamDims = make_float2(1.0f / beamletDimensions.x, 1.0f / beamletDimensions.y);
+    cudaMemcpyToSymbol(invBeamletDims, &invBeamDims, sizeof(float2));
     CHECK_FOR_CUDA_ERROR();
 
 #ifdef _DOSE_DEVICE_BORDER
@@ -609,7 +608,7 @@ __host__ void Dose(float** out,                      // result dose map
                    Beam oebeam,                      // beam
                    Beam voi,                         // voxels of interest
                    uchar* fmap,                      // fluence map
-                   uint beamlets_x, uint beamlets_y)     // scale
+                   uint beamlet_x, uint beamlet_y)     // scale
 {
     // allocate TERMA array
     float* _terma = NULL;
@@ -622,15 +621,22 @@ __host__ void Dose(float** out,                      // result dose map
     cudaMemcpyToSymbol(energy, &e, sizeof(float));
     CHECK_FOR_CUDA_ERROR();
 
+    // Copy beam and beamlet info to device
     CudaBeam _beam;
     _beam(oebeam, scale);
     cudaMemcpyToSymbol(beam, &_beam, sizeof(CudaBeam));
     CHECK_FOR_CUDA_ERROR();
+
+    beamletDimensions = make_uint2(beamlet_x, beamlet_y);
+    cudaMemcpyToSymbol(beamletDims, &beamletDimensions, sizeof(uint2));
+    float2 invBeamDims = make_float2(1.0f / beamletDimensions.x, 1.0f / beamletDimensions.y);
+    cudaMemcpyToSymbol(invBeamletDims, &invBeamDims, sizeof(float2));
+    CHECK_FOR_CUDA_ERROR();
     
     // copy fluence map
     uchar* _fmap = NULL;
-    cudaMalloc((void**)&_fmap, beamlets_x * beamlets_y * sizeof(uchar));
-    cudaMemcpy((void*)_fmap, (void*)fmap, beamlets_x * beamlets_y * sizeof(uchar), cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&_fmap, beamlet_x * beamlet_y * sizeof(uchar));
+    cudaMemcpy((void*)_fmap, (void*)fmap, beamlet_x * beamlet_y * sizeof(uchar), cudaMemcpyHostToDevice);
     CHECK_FOR_CUDA_ERROR();
 
     // calculate TERMA
