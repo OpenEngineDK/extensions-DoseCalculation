@@ -14,7 +14,7 @@
 
 
 texture<float, 3, cudaReadModeElementType> intensityTex;
-texture<float, 3, cudaReadModeElementType> tex2;
+texture<float, 3, cudaReadModeElementType> termaTex;
 
 typedef unsigned char uchar;
 typedef unsigned int uint;
@@ -277,7 +277,7 @@ __device__ float klookup(uint3 tcDst, int3 _tcSrc) {
         kaxis = alpha * kaxis;
         uint y = length(kaxis);
         uint x = length(kaxis - lookupVec);
-        return (y <= 3 && x <= 7 && alpha >= 0) ? kern[y][x] * tex3D(tex2, tcSrc.x, tcSrc.y, tcSrc.z) : 0.0f;
+        return (y <= 3 && x <= 7 && alpha >= 0) ? kern[y][x] * tex3D(termaTex, tcSrc.x, tcSrc.y, tcSrc.z) : 0.0f;
         
     }
     return 0.0f;
@@ -468,7 +468,7 @@ __host__ void Dose(float** out,                      // result dose map
     copyParams.kind = cudaMemcpyHostToDevice;
     cudaMemcpy3D(&copyParams);
     CHECK_FOR_CUDA_ERROR();
-    cudaBindTextureToArray(tex2, tarr, channelDesc);
+    cudaBindTextureToArray(termaTex, tarr, channelDesc);
     CHECK_FOR_CUDA_ERROR();
 
     // set voxels of interest (this is simply a larger cone beam).

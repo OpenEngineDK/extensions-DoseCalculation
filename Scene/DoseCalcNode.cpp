@@ -12,7 +12,7 @@
 #include <Logging/Logger.h>
 
 #include <Utils/CUDA/DoseCalc.h>
-#include <Utils/CUDA/Superposition.h>
+//#include <Utils/CUDA/Superposition.h>
 #include <Utils/CUDA/Doze.h>
 #include <Scene/BeamNode.h>
 
@@ -67,7 +67,7 @@ namespace OpenEngine {
         }
 
         void DoseCalcNode::CalculateDose(BeamNode* beam, int beamlet_x, int beamlet_y) {
-            // RunDoseCalc(cuDoseArr, beam, beamlet_x, beamlet_y, 0);
+            //RunDoseCalc(cuDoseArr, beam->GetBeam(1.0), beamlet_x, beamlet_y, 0);
             unsigned char fmap = 1;
             Dose(&cuDoseArr, 
                  beam->GetBeam(1.0), 
