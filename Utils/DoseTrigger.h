@@ -41,6 +41,8 @@ private:
     Vector<3,float> vv_pos;
     Quaternion<float> vv_rot;
     bool bav;
+    float scale;
+    float srcDist;
 public:
     DoseTrigger(DoseCalcNode* dnode, Viewport* vp) 
   : dnode(dnode)
@@ -51,8 +53,10 @@ public:
   , dist(500)
   , vp(vp)
   , bav(false)
+  , scale(20.0)
+  , srcDist(200.0)
 {
-    beamTrans->SetScale(Vector<3,float>(20,200,20));
+    beamTrans->SetScale(Vector<3,float>(scale,srcDist,scale));
     ITexture3DBasePtr tex = dnode->GetIntensityTex();
     Vector<3,float> scale = dnode->GetScale();
     pivot->SetPosition(Vector<3,float>(tex->GetWidth()*scale[0]*0.5, tex->GetHeight()*scale[1]*0.5, tex->GetDepth()*scale[2]*0.5));
@@ -85,7 +89,37 @@ public:
         beamTrans->SetPosition(q.RotateVector(Vector<3,float>(0.0,1.0,0.0))* dist);
         if (bav) UpdateViewingVolume();
     }
-    
+  
+    float GetScale() {
+        return scale;
+    }
+
+    void SetScale(float scale) {
+        beamTrans->SetScale(Vector<3,float>(scale,srcDist,scale));
+        this->scale = scale;
+    }    
+
+    float GetBeamDist() {
+        return dist;
+    }
+
+    void SetBeamDist(float dist) {
+        this->dist = dist;
+        Quaternion<float> q = beamTrans->GetRotation();
+        beamTrans->SetPosition(q.RotateVector(Vector<3,float>(0.0,1.0,0.0))* dist);
+        if (bav) UpdateViewingVolume();
+    }    
+
+    float GetSrcDist() {
+        return srcDist;
+    }
+
+    void SetSrcDist(float srcDist) {
+        beamTrans->SetScale(Vector<3,float>(scale,srcDist,scale));
+        this->srcDist = srcDist;
+        if (bav) UpdateViewingVolume();
+    }    
+  
     float GetAngle() {
         return beamTrans->GetRotation().GetReal();
     }
@@ -117,16 +151,19 @@ private:
         beamTrans->GetAccumulatedTransformations(&p, &q);
         Quaternion<float> q1(PI, Vector<3,float>(0.0,1.0,0.0));
         Quaternion<float> q2(0.5*PI, Vector<3,float>(-1.0,0.0,0.0));
-        vp->GetViewingVolume()->SetPosition(p);
+        vp->GetViewingVolume()->SetPosition(p - q.RotateVector(Vector<3,float>(0.0,-srcDist,0.0)));
         vp->GetViewingVolume()->SetDirection(q*q1*q2);
     }
 
 };
 
-WIDGET_START(DoseTrigger);
-WIDGET_BUTTON("Calc", 0, DoCalc, TRIGGER);
-WIDGET_BUTTON("BAV", GetBeamAngleView, SetBeamAngleView, TOGGLE);
+WIDGET_START(DoseTrigger, DoseTriggerWidget);
+WIDGET_BUTTON("Calculate dose", 0, DoCalc, TRIGGER);
+WIDGET_BUTTON("Beam view", GetBeamAngleView, SetBeamAngleView, TOGGLE);
 WIDGET_SLIDER("Beam angle", GetAngle, SetAngle, CONST, 0, CONST, 2*PI);
+WIDGET_SLIDER("Beam scale", GetScale, SetScale, CONST, 20, CONST, 200);
+WIDGET_SLIDER("Source distance", GetSrcDist, SetSrcDist, CONST, 20, CONST, 400);
+WIDGET_SLIDER("Beam distance", GetBeamDist, SetBeamDist, CONST, 100, CONST, 1000);
 WIDGET_STOP();
 
 } // NS Utils

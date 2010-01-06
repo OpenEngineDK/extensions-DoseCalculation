@@ -29,6 +29,7 @@ namespace OpenGL {
         float minIntensity;
         float maxIntensity;
 
+        bool doSlice;
     public:
         RayCastRenderingView(Viewport& viewport);
 
@@ -39,16 +40,23 @@ namespace OpenGL {
         float GetMaxIntensity() {return maxIntensity;}
         void SetMaxIntensity(float i) {maxIntensity = i;}
 
+        // Rendering modes
+        void DoThreshold();
+        void DoSlice();
 
     };
 
-    WIDGET_START(RayCastRenderingView);
-    WIDGET_SLIDER("MIN", 
+    WIDGET_START(RayCastRenderingView, RayCastRenderingViewWidget);
+    WIDGET_COLLECTION_BEGIN(RADIO);
+    WIDGET_BUTTON("Threshold", 0, DoThreshold, TRIGGER);
+    WIDGET_BUTTON("Slice", 0, DoSlice, TRIGGER);
+    WIDGET_COLLECTION_END();
+    WIDGET_SLIDER("Min", 
                   GetMinIntensity, 
                   SetMinIntensity,
                   CONST, 0,
                   CONST, 1);
-    WIDGET_SLIDER("MAX", 
+    WIDGET_SLIDER("Max", 
                   GetMaxIntensity, 
                   SetMaxIntensity,
                   CONST, 0,

@@ -100,7 +100,7 @@ namespace OpenEngine {
             inline int GetIndex(int x, int y, int z);
         };
 
-        WIDGET_START(DoseCalcNode);
+        WIDGET_START(DoseCalcNode, DoseCalcNodeWidget);
         WIDGET_SLIDER("X", GetXPlaneCoord, SetXPlaneCoord, CONST, 0, METHOD, GetIntensityTex()->GetWidth);
         // WIDGET_CSLIDER(X, GetXPlaneCoord, SetXPlaneCoord, DoseCalcNode, int, 1);
         WIDGET_SLIDER("Y", GetYPlaneCoord, SetYPlaneCoord, CONST, 0, METHOD, GetIntensityTex()->GetHeight);

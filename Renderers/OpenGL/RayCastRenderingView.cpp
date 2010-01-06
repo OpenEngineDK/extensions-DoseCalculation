@@ -79,7 +79,7 @@ using namespace OpenEngine::Display;
                 */
                 
                 RenderToPBO(pbo,node->cuDoseArr,w,h,iva,pm(0,0),pm(1,1),
-                            minIntensity,maxIntensity);
+                            minIntensity,maxIntensity, doSlice);
 
                 glMatrixMode(GL_MODELVIEW);
                 glLoadIdentity();
@@ -101,4 +101,12 @@ using namespace OpenEngine::Display;
             }
         }
     }
+}
+
+void RayCastRenderingView::DoThreshold() {
+    doSlice = false;
+}
+
+void RayCastRenderingView::DoSlice() {
+    doSlice = true;
 }
