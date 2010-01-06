@@ -13,7 +13,7 @@
 #define PIXEL_UNIT 0.01 // one pixel = 1 cm^3
 
 
-texture<float, 3, cudaReadModeElementType> tex;
+texture<float, 3, cudaReadModeElementType> intensityTex;
 texture<float, 3, cudaReadModeElementType> tex2;
 
 typedef unsigned char uchar;
@@ -73,7 +73,7 @@ __device__ bool VoxelInsideBeamlet(float3 point, Matrix3x3 cone1, Matrix3x3 cone
  * Account for any prior changes made to the voxel data
  */
 __device__ float hounsfield(uint3 r) {
-    return (tex3D(tex, r.x, r.y, r.z) * 2000.0 - 1000.0);
+    return (tex3D(intensityTex, r.x, r.y, r.z) * 2000.0 - 1000.0);
 }
 
 /**
@@ -357,12 +357,12 @@ __host__ void FluenceMap(uchar** fmap,
 
     // Setup texture
     cudaChannelFormatDesc channelDesc = cudaCreateChannelDesc<float>();
-    tex.normalized = false;
-    tex.filterMode = cudaFilterModeLinear;
-    tex.addressMode[0] = cudaAddressModeClamp;
-    tex.addressMode[1] = cudaAddressModeClamp;
-    tex.addressMode[2] = cudaAddressModeClamp;
-    cudaBindTextureToArray(tex, GetVolumeArray(), channelDesc);
+    intensityTex.normalized = false;
+    intensityTex.filterMode = cudaFilterModeLinear;
+    intensityTex.addressMode[0] = cudaAddressModeClamp;
+    intensityTex.addressMode[1] = cudaAddressModeClamp;
+    intensityTex.addressMode[2] = cudaAddressModeClamp;
+    cudaBindTextureToArray(intensityTex, GetVolumeArray(), channelDesc);
     CHECK_FOR_CUDA_ERROR();
 
     // run fluence map kernel
@@ -384,12 +384,12 @@ __host__ void Dose(float** out,                      // result dose map
 {
     // Setup texture
     cudaChannelFormatDesc channelDesc = cudaCreateChannelDesc<float>();
-    tex.normalized = false;
-    tex.filterMode = cudaFilterModeLinear;
-    tex.addressMode[0] = cudaAddressModeClamp;
-    tex.addressMode[1] = cudaAddressModeClamp;
-    tex.addressMode[2] = cudaAddressModeClamp;
-    cudaBindTextureToArray(tex, GetVolumeArray(), channelDesc);
+    intensityTex.normalized = false;
+    intensityTex.filterMode = cudaFilterModeLinear;
+    intensityTex.addressMode[0] = cudaAddressModeClamp;
+    intensityTex.addressMode[1] = cudaAddressModeClamp;
+    intensityTex.addressMode[2] = cudaAddressModeClamp;
+    cudaBindTextureToArray(intensityTex, GetVolumeArray(), channelDesc);
     CHECK_FOR_CUDA_ERROR();
 
     // allocate TERMA array
