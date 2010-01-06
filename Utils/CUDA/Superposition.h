@@ -3,6 +3,8 @@
 
 #include <Scene/Beam.h>
 
+typedef unsigned int uint;
+
 using OpenEngine::Scene::Beam;
 
 void Dose(float** out,
