@@ -12,25 +12,29 @@
 #include <Logging/Logger.h>
 #define _DOSE_DEVICE_BORDER
 
-typedef unsigned char uchar;
-typedef unsigned int  uint;
-
 texture<float, 3, cudaReadModeElementType> tex;
 
 unsigned int timer = 0;
 uint3 dimensions;
+uint2 beamletDimensions;
 float3 scaling;
 __constant__ uint3 dims;
 __constant__ uint2 beamletDims;
+__constant__ float2 invBeamletDims;
 __constant__ float3 scale;
 __constant__ CudaBeam beam;
 #ifdef _DOSE_DEVICE_BORDER
 __constant__ uint3 border;
 #endif
 
+void print(float3 v){
+    printf("(%f, %f, %f)", v.x, v.y, v.z);
+}
+
 void SetupDoseCalc(float** cuDoseArr, 
                    int w, int h, int d, // dimensions
-                   float sw, float sh, float sd) // scale
+                   float sw, float sh, float sd, // scale
+                   uint bw, uint bh) // beamlet dimensions
 { 
     cudaMalloc((void**)cuDoseArr, sizeof(float)*w*h*d);
     CHECK_FOR_CUDA_ERROR();
@@ -56,6 +60,12 @@ void SetupDoseCalc(float** cuDoseArr,
     printf("Scale: %f,%f,%f\n", sw, sh, sd);
     scaling = make_float3(sw, sh, sd);
     cudaMemcpyToSymbol(scale, &scaling, sizeof(float3));
+    CHECK_FOR_CUDA_ERROR();
+
+    beamletDimensions = make_uint2(bw, bh);
+    cudaMemcpyToSymbol(beamletDims, &beamletDimensions, sizeof(uint3));
+    float2 invBeamDims = make_float2(1.0f / beamletDimensions.x, 1.0f / beamletDimensions.y);
+    cudaMemcpyToSymbol(invBeamletDims, &invBeamDims, sizeof(uint3));
     CHECK_FOR_CUDA_ERROR();
 
     //cutCreateTimer( &timer);
@@ -151,16 +161,6 @@ __device__ float GetRadiologicalDepth(const uint3 textureCoord, const float3 coo
     return radiologicalDepth;
 }
 
-/**
- * Rate each individual voxel based on the intensity, critical mass
- * and tumor found in it, and weighted by the length of the beam
- * passing through plus the amount of fotons deposited.
- *
- * return The rating.
- */
-__device__ float RateVoxel(float delta, uint3 coord){
-    return 1.0;
-}
 
 /**
  * Calculates the radiological depth of each voxel and stores it in
@@ -210,15 +210,19 @@ __global__ void voxelsOfInterest(float* output) {
  * param input An array of radiological depths for each voxel.
  * param output An boolean array of how each beamlet performed.
  */
-__global__ void doseCalc(float* input, uint *output) {
+__global__ void rateBeamlet(float* input, uint *output) {
     // __constant__ uint3 dims
     // __constant__ float3 scale
     // __constant__ CudaBeam beam;
+    // __constant__ uint2 beamletDims;
+    // __constant__ uint2 invBeamletDims;
 
-    
+    uint coordXStart = blockIdx.x * blockDim.x + threadIdx.x;
+    uint coordYStart = blockIdx.y * blockDim.y + threadIdx.y;
+    uint coordXEnd = coordXStart + 1;
+    uint coordYEnd = coordYStart + 1;
 
     // Calculate the local beamlet info, vectors are in texture coordinates.
-    /*
     float3 v1;
     float3 v2;
     float3 v3;
@@ -229,29 +233,6 @@ __global__ void doseCalc(float* input, uint *output) {
     Matrix3x3 invCone2;
     invCone2(v1, v2, v3);
     invCone2 = invCone2.getInverse();
-    */
-
-    /*
-    // For each plane calculate wether the beam hits and in which
-    // voxels it does.
-    float rating = 0;
-    uint2 from, to;
-    uint3 coord;
-    for (coord.z = 0; coord.z < dims.z; ++coord.z){
-        if (BeamletPlaneIntersection(coord.z, from, to, v1, v2, v3, v4)){
-            // Our beamlet intersect the plane. Lets see which voxels it hits.
-            for (coord.x = from.x; coord.x < to.x; ++coord.x){
-                for (coord.y = from.y; coord.y < to.y; ++coord.y){
-                    float3 c = make_float3(coord.x, coord.y, coord.z);
-                    if (VoxelInsideBeamlet(c, invCone1, invCone2)){
-                        // Then rate the beam based on each voxel it hits.
-                        
-                    }
-                }
-            }
-        }
-    }
-    */
 }
 
 void RunDoseCalc(float* cuDoseArr, Beam oeBeam, int beamlet_x, int beamlet_y, int kernel) {
@@ -279,7 +260,7 @@ void RunDoseCalc(float* cuDoseArr, Beam oeBeam, int beamlet_x, int beamlet_y, in
     const dim3 voxelGridSize(dimensions.x * dimensions.z * dimensions.y / voxelBlockSize.x, 1);
 
     const dim3 beamletBlockSize(16,16,1);
-    const dim3 beamletGridSize();
+    const dim3 beamletGridSize(beamletDimensions.x / beamletBlockSize.x, beamletDimensions.y / beamletBlockSize.y);
 
     // start timer
     //cutResetTimer(timer);
@@ -297,7 +278,7 @@ void RunDoseCalc(float* cuDoseArr, Beam oeBeam, int beamlet_x, int beamlet_y, in
         break;
     default:
         radioDepth<<< voxelGridSize, voxelBlockSize >>>(cuDoseArr);
-        //doseCalc<<< >>>();
+        //rateBeamlet<<< beamletGridSize, beamletBlockSize >>>(cuDoseArray, andet array);
     }
 
 	// Report timing
