@@ -12,11 +12,15 @@
 #include <Logging/Logger.h>
 #define _DOSE_DEVICE_BORDER
 #define PIXEL_UNIT 0.01f // one pixel = 1 cm^3
+#define MU_WATER 0.135f  // lets just use 0.135 for mu_water(E=171keV) ...
+
+#define HALFSIZE 4
 
 texture<float, 3, cudaReadModeElementType> intensityTex;
 texture<float, 3, cudaReadModeElementType> termaTex;
 
 unsigned int timer = 0;
+
 uint3 dimensions;
 uint2 beamletDimensions;
 float3 scaling;
@@ -82,7 +86,7 @@ void SetupDoseCalc(float** cuDoseArr,
     cudaMemcpyToSymbol(scale, &scaling, sizeof(float3));
     CHECK_FOR_CUDA_ERROR();
 
-    //cutCreateTimer( &timer);
+    cutCreateTimer( &timer);
 
     printf("SetupDoseCalc done\n");
 }
@@ -103,6 +107,45 @@ __device__ float3 texToVec(uint3 tex) {
  */
 __device__ uint3 vecToTex(float3 vec) {
     return make_uint3(vec.x / scale.x, vec.y / scale.y, vec.z / scale.z);
+}
+
+// theoretical utility functions
+
+/**
+ * Account for any prior changes made to the voxel data
+ */
+__device__ float hounsfield(uint3 r) {
+    return (tex3D(intensityTex, r.x, r.y, r.z) * 2000.0f - 1000.0f);
+}
+
+/**
+ * Get linear attenuation coeffecient (mu).
+ *
+ * HU = ((mu - mu_water(E)) / mu_water(E)) * 1000
+ *
+ * where mu_water and the resulting HU are dependent on the energy E of
+ * the CT scanner (Brown et. al. 2006).
+ * 
+ */
+__device__ float attenuation(uint3 r) {
+    return (hounsfield(r) / 1000.0f) * MU_WATER + MU_WATER;
+}
+
+/**
+ * Du to the way we preprocess the texture and the definition of
+ * hounsfield units and attenuation. We can optimize the attenuation
+ * like this.
+ */
+__device__ float attenuationOpt(uint3 r) {
+    return tex3D(intensityTex, r.x, r.y, r.z) * 2 * MU_WATER;
+}
+
+/**
+ * Get density relative to water.
+ */
+__device__ float density(uint3 r) {
+    // not quite sure how relative density relates to the HU. 
+    return (attenuation(r) / MU_WATER) * PIXEL_UNIT ;
 }
 
 __device__ float3 GetWorldCoord(uint3 textureCoord){
@@ -182,47 +225,15 @@ __device__ float GetRadiologicalDepth(const uint3 textureCoord, const float3 coo
         // for the next crossing.
         alpha[minIndex] += delta[minIndex];
 
-        // Advance the texture coordinates
-        texCoord[minIndex] += texDelta[minIndex];
-
         // Add the radiological length for this step to the overall
         // depth.
         radiologicalDepth += advance * tex3D(intensityTex, texCoord[0], texCoord[1], texCoord[2]);
+
+        // Advance the texture coordinates
+        texCoord[minIndex] += texDelta[minIndex];
     }
 
     return radiologicalDepth;
-}
-
-// theoretical utility functions
-
-/**
- * Account for any prior changes made to the voxel data
- */
-__device__ float hounsfield(uint3 r) {
-    return (tex3D(intensityTex, r.x, r.y, r.z) * 2000.0f - 1000.0f);
-}
-
-/**
- * Get linear attenuation coeffecient (mu).
- *
- * HU = ((mu - mu_water(E)) / mu_water(E)) * 1000
- *
- * where mu_water and the resulting HU are dependent on the energy E of
- * the CT scanner (Brown et. al. 2006).
- * 
- */
-__device__ float attenuation(uint3 r) {
-    // lets just use 0.135 for mu_water(E=171keV) ...
-    const float mu_water = 0.135f;
-    return (hounsfield(r) / 1000.0f) * mu_water + mu_water;
-}
-
-/**
- * Get density relative to water.
- */
-__device__ float density(uint3 r) {
-    // not quite sure how relative density relates to the HU. 
-    return (attenuation(r) / 0.135f) * PIXEL_UNIT ;
 }
 
 /**
@@ -265,27 +276,27 @@ __device__ float sumAtt(float3 r, uint3 _tc) {
         float alpha = fmin(alphas.x, alphas.y);
         alpha = fmin(alpha, alphas.z);
         
-        sum += attenuation(make_uint3(tc.x, tc.y, tc.z)) * (alpha - prevAlpha) * l; 
+        sum += attenuation(make_uint3(tc.x, tc.y, tc.z)) * (alpha - prevAlpha) * l;
         prevAlpha = alpha;
 
         // Find minimal coordinates. Note that several coordinates
         // could be minimal (equal).
-        uint3 min = make_uint3( (alphas.x == alpha) ? 1 : 0,
-                                (alphas.y == alpha) ? 1 : 0,
-                                (alphas.z == alpha) ? 1 : 0 );
+        uint3 min = make_uint3( (alphas.x == alpha) ? dtc.x : 0,
+                                (alphas.y == alpha) ? dtc.y : 0,
+                                (alphas.z == alpha) ? dtc.z : 0 );
         // uint3 tmp = make_uint3(__float2int_rz(alpha / alphas.x),
         //                        __float2int_rz(alpha / alphas.y),
         //                        __float2int_rz(alpha / alphas.z));
         
         // advance the texture coordinates (termination is based on dot(min, min) != 0)
-        tc = make_int3(tc.x + min.x * dtc.x, 
-                       tc.y + min.y * dtc.y,
-                       tc.z + min.z * dtc.z);
+        tc = make_int3(tc.x + min.x, 
+                       tc.y + min.y,
+                       tc.z + min.z);
         
         // advance the planes.
-        planes = make_float3(planes.x + scale.x * dtc.x * min.x,
-                             planes.y + scale.y * dtc.y * min.y,
-                             planes.z + scale.z * dtc.z * min.z);
+        planes = make_float3(planes.x + scale.x * min.x,
+                             planes.y + scale.y * min.y,
+                             planes.z + scale.z * min.z);
         
     }
     return sum;
@@ -429,7 +440,7 @@ __global__ void doseDeposition(uint offset, float* out) {
     out[idx] = 0.0f;
 
     if (VoxelInsideBeamlet(vec, beam.invCone1, beam.invCone2)) {
-        // const int halfsize = 7; 
+        // const int halfsize = 4; 
         for (int i = -halfsize; i <= halfsize; ++i) {
             for (int j = -halfsize; j <= halfsize; ++j) {
                 for (int k = -halfsize; k <= halfsize; ++k) {
@@ -467,7 +478,7 @@ __global__ void radioDepth(float* output) {
 /**
  * Calculates for each voxel wether it is inside the beam or not.
  *
- * param output An array of the voxels interest. Contains 1.0 if the
+ * param output An array of the voxels interest. Contains 1.0f if the
  * voxel is in the beam otherwise 0.0f.
  */
 __global__ void voxelsOfInterest(float* output) {
@@ -574,9 +585,6 @@ void RunDoseCalc(float* cuDoseArr, Beam oeBeam, int beamlet_x, int beamlet_y, in
     //cutResetTimer(timer);
 	//cutStartTimer(timer);
 
-    // @TODO bind the radiological depth array as a texture after
-    // being filled? Might yield nothing.
-
     switch(kernel){
     case 0:
         radioDepth<<< voxelGridSize, voxelBlockSize >>>(cuDoseArr);
@@ -657,6 +665,11 @@ __host__ void Dose(float** out,                      // result dose map
     logger.info << "w*h*d: " << size << logger.end;
     unsigned int offset = 0;
     logger.info << "Run TERMA kernel in " << iter << " iterations..." << logger.end; 
+    
+    // start timer
+    cutResetTimer(timer);
+	cutStartTimer(timer);
+
     for (unsigned int i = 0; i < iter; ++i) {
         logger.info << "TERMA run #" << i  << logger.end; 
         logger.info << "offset = " << offset << logger.end;
@@ -664,6 +677,13 @@ __host__ void Dose(float** out,                      // result dose map
         CHECK_FOR_CUDA_ERROR();
         offset += blockSize.x * gridSize.x;
     }
+
+	// Report timing
+	cudaThreadSynchronize();
+	cutStopTimer(timer);  
+	double time = cutGetTimerValue( timer ); 
+	printf("time: %.4f ms.\n", time );
+
     // terma<<< gridSize, blockSize >>>(0, _terma, _fmap);
 
     float* test = new float[size];
@@ -700,16 +720,18 @@ __host__ void Dose(float** out,                      // result dose map
     logger.info << "Kernel half size: " << _halfsize << logger.end; 
    
     // Run the dose deposition kernel
-    logger.info << "Running dose deposition kernel in " << iter << " iterations..." << logger.end; 
+    //logger.info << "Running dose deposition kernel in " << iter << " iterations..." << logger.end; 
     offset = 0;
   
     for (unsigned int i = 0; i < iter; ++i) {
-        logger.info << "Dose deposition run #" << i << logger.end;
-        logger.info << "offset = " << offset << logger.end;
+        logger.info << "Dose deposition run #" << i << "/" << iter << logger.end;
+        //logger.info << "offset = " << offset << logger.end;
         doseDeposition<<< gridSize, blockSize >>>( offset, *out ); 
         CHECK_FOR_CUDA_ERROR();
         offset += blockSize.x * gridSize.x;
     }
+
+    /*
     // print some dose values for debugging purposes.
     int s = 5;
     for (uint i = dimensions.x/2-s/2; i < dimensions.x/2 + s/2; ++i) {
@@ -732,6 +754,7 @@ __host__ void Dose(float** out,                      // result dose map
         }
         
     }
+    */
     
     delete[] test;
     cudaFree(_terma);
