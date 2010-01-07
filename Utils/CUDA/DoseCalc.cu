@@ -227,7 +227,8 @@ __device__ float GetRadiologicalDepth(const uint3 textureCoord, const float3 coo
 
         // Add the radiological length for this step to the overall
         // depth.
-        radiologicalDepth += advance * tex3D(intensityTex, texCoord[0], texCoord[1], texCoord[2]);
+        //radiologicalDepth += advance * tex3D(intensityTex, texCoord[0], texCoord[1], texCoord[2]);
+        radiologicalDepth += advance * attenuation(make_uint3(texCoord[0], texCoord[1], texCoord[2]));
 
         // Advance the texture coordinates
         texCoord[minIndex] += texDelta[minIndex];
@@ -246,9 +247,14 @@ __device__ float sumAtt(float3 r, uint3 _tc) {
     int3 tc = make_int3(_tc.x, _tc.y, _tc.z);
     
     // delta tc is determined by the sign of the direction.
+    /*
     const int3 dtc = make_int3(__float2int_rn(dir.x / fabs(dir.x)),
                                __float2int_rn(dir.y / fabs(dir.y)),
-                               __float2int_rn(dir.z / fabs(dir.z)));    
+                               __float2int_rn(dir.z / fabs(dir.z)));
+    */
+    const int3 dtc = make_int3((dir.x > 0) ? 1 : -1,
+                               (dir.y > 0) ? 1 : -1,
+                               (dir.z > 0) ? 1 : -1);
                                
     // the initial offsets of the planes closest to the point r in the
     // direction of dir.
@@ -281,17 +287,12 @@ __device__ float sumAtt(float3 r, uint3 _tc) {
 
         // Find minimal coordinates. Note that several coordinates
         // could be minimal (equal).
-        uint3 min = make_uint3( (alphas.x == alpha) ? dtc.x : 0,
-                                (alphas.y == alpha) ? dtc.y : 0,
-                                (alphas.z == alpha) ? dtc.z : 0 );
-        // uint3 tmp = make_uint3(__float2int_rz(alpha / alphas.x),
-        //                        __float2int_rz(alpha / alphas.y),
-        //                        __float2int_rz(alpha / alphas.z));
+        int3 min = make_int3( (alphas.x == alpha) ? dtc.x : 0,
+                              (alphas.y == alpha) ? dtc.y : 0,
+                              (alphas.z == alpha) ? dtc.z : 0 );
         
         // advance the texture coordinates (termination is based on dot(min, min) != 0)
-        tc = make_int3(tc.x + min.x, 
-                       tc.y + min.y,
-                       tc.z + min.z);
+        tc += min;
         
         // advance the planes.
         planes = make_float3(planes.x + scale.x * min.x,
@@ -314,6 +315,7 @@ __device__ float initFluence(float3 r) {
 __device__ float fluence(float3 r, uint3 tc) {
     float d = length(r - beam.src) * PIXEL_UNIT;
     return (initFluence(r)/(d*d)) * expf(-sumAtt(r, tc));
+    //return (initFluence(r)/(d*d)) * expf(-GetRadiologicalDepth(tc, r));
 }
 
 /**
@@ -342,9 +344,14 @@ __device__ float rad(uint3 tc1, float3 vec1, uint3 tc2, float3 vec2) {
     uint3 tc = tc1;
 
     // delta tc is determined by the sign of the direction.
+    /*
     const int3 dtc = make_int3(__float2int_rn(dir.x / fabs(dir.x)),
                                __float2int_rn(dir.y / fabs(dir.y)),
-                               __float2int_rn(dir.z / fabs(dir.z)));    
+                               __float2int_rn(dir.z / fabs(dir.z)));
+    */
+    const int3 dtc = make_int3((dir.x > 0) ? 1 : -1,
+                               (dir.y > 0) ? 1 : -1,
+                               (dir.z > 0) ? 1 : -1);
                                
     // the initial offsets of the planes closest to the point r in the
     // direction of dir.
@@ -375,16 +382,14 @@ __device__ float rad(uint3 tc1, float3 vec1, uint3 tc2, float3 vec2) {
         sum += density(tc) * length((alpha - prevAlpha) *  dir); 
         prevAlpha = alpha;
 
-        uint3 min = make_uint3( (alphas.x == alpha) ? 1 : 0,
-                                (alphas.y == alpha) ? 1 : 0,
-                                (alphas.z == alpha) ? 1 : 0 );
-        tc = make_uint3(tc.x + min.x * dtc.x, 
-                        tc.y + min.y * dtc.y,
-                        tc.z + min.z * dtc.z);
+        uint3 min = make_uint3( (alphas.x == alpha) ? dtc.x : 0,
+                                (alphas.y == alpha) ? dtc.y : 0,
+                                (alphas.z == alpha) ? dtc.z : 0 );
+        tc += min;
         
-        planes = make_float3(planes.x + scale.x * dtc.x * min.x,
-                             planes.y + scale.y * dtc.y * min.y,
-                             planes.z + scale.z * dtc.z * min.z);
+        planes = make_float3(planes.x + scale.x * min.x,
+                             planes.y + scale.y * min.y,
+                             planes.z + scale.z * min.z);
         
     }
     return sum + density(tc) * length((1 - prevAlpha) * dir);
@@ -582,8 +587,8 @@ void RunDoseCalc(float* cuDoseArr, Beam oeBeam, int beamlet_x, int beamlet_y, in
     const dim3 beamletGridSize(beamletDimensions.x / beamletBlockSize.x, beamletDimensions.y / beamletBlockSize.y);
 
     // start timer
-    //cutResetTimer(timer);
-	//cutStartTimer(timer);
+    cutResetTimer(timer);
+	cutStartTimer(timer);
 
     switch(kernel){
     case 0:
@@ -598,12 +603,10 @@ void RunDoseCalc(float* cuDoseArr, Beam oeBeam, int beamlet_x, int beamlet_y, in
     }
 
 	// Report timing
-    /*
 	cudaThreadSynchronize();
 	cutStopTimer(timer);  
 	double time = cutGetTimerValue( timer ); 
 	printf("time: %.4f ms.\n", time );
-    */
 
     CHECK_FOR_CUDA_ERROR();
 }
