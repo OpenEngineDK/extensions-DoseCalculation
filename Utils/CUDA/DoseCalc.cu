@@ -181,9 +181,9 @@ __device__ float GetRadiologicalDepth(const uint3 textureCoord, const float3 coo
                             abs(dist / vec.y),
                             abs(dist / vec.z)};
     
-    const int texDelta[3] = {(vec.x > 0) ? 1 : -1,
-                             (vec.y > 0) ? 1 : -1,
-                             (vec.z > 0) ? 1 : -1};
+    const uint texDelta[3] = {(vec.x > 0) ? 1 : -1,
+                              (vec.y > 0) ? 1 : -1,
+                              (vec.z > 0) ? 1 : -1};
 
 #ifndef _DOSE_DEVICE_BORDER
     // The border texcoords
@@ -200,6 +200,7 @@ __device__ float GetRadiologicalDepth(const uint3 textureCoord, const float3 coo
     float radiologicalDepth = 0;
 
     while (
+           /*
 #ifdef _DOSE_DEVICE_BORDER
            texCoord[0] != border.x &&
            texCoord[1] != border.y &&
@@ -209,6 +210,10 @@ __device__ float GetRadiologicalDepth(const uint3 textureCoord, const float3 coo
            texCoord[1] != border[1] &&
            texCoord[2] != border[2]
 #endif
+           */
+           texCoord[0] < dims.x &&
+           texCoord[1] < dims.y &&
+           texCoord[2] < dims.z
            ){
         
         // is x less then y?
@@ -246,7 +251,8 @@ __device__ float GetRadiologicalDepth(const uint3 textureCoord, const float3 coo
  * back to the src point.
  */
 __device__ float sumAtt(float3 r, uint3 tc) {
-    float3 dir = beam.src - r ; 
+    float3 dir = beam.src - r;
+    float3 invDir = make_float3(1.0f / dir.x, 1.0f / dir.y, 1.0f / dir.z);
     float l = length(dir) * PIXEL_UNIT;
     
     // delta tc is determined by the sign of the direction.
@@ -256,9 +262,10 @@ __device__ float sumAtt(float3 r, uint3 tc) {
                                
     // the initial offsets of the planes closest to the point r in the
     // direction of dir.
-    float3 planes = make_float3(scale.x * (tc.x + (dtc.x + 1) / 2),
-                                scale.y * (tc.y + (dtc.y + 1) / 2),
-                                scale.z * (tc.z + (dtc.z + 1) / 2));
+    float3 planes = make_float3(scale.x * (tc.x + dtc.x * 0.5f + 0.5f),
+                                scale.y * (tc.y + dtc.y * 0.5f + 0.5f),
+                                scale.z * (tc.z + dtc.z * 0.5f + 0.5f));
+    
     float prevAlpha = 0.0f;
     float sum = 0.0f;
 
@@ -276,7 +283,7 @@ __device__ float sumAtt(float3 r, uint3 tc) {
         // since the signs are the same on both sides of the division.
         // (planes - r) can never be zero since we advance the plane
         // offset away from r.
-        float3 alphas = ( planes - r ) / dir;
+        float3 alphas = ( planes - r ) * invDir;
         // if dir is zero then the result will be infty or -infty.
         // this is a dirty hack to ensure that we only get positive infty.
         alphas = make_float3(fabs(alphas.x),
@@ -291,8 +298,8 @@ __device__ float sumAtt(float3 r, uint3 tc) {
         // Find minimal coordinates. Note that several coordinates
         // could be minimal (equal).
         uint3 min = make_uint3( (alphas.x == alpha) ? dtc.x : 0,
-                                (alphas.y == alpha) ? dtc.y : 0,
-                                (alphas.z == alpha) ? dtc.z : 0 );
+                          (alphas.y == alpha) ? dtc.y : 0,
+                          (alphas.z == alpha) ? dtc.z : 0 );
         
         // advance the texture coordinates (termination is based on dot(min, min) != 0)
         tc += min;
@@ -344,23 +351,20 @@ __global__ void terma(uint offset, float* out, uchar* fmap) {
 
 __device__ float rad(uint3 tc1, float3 vec1, uint3 tc2, float3 vec2) {
     float3 dir = vec2 - vec1;
+    float3 invDir = make_float3(1.0f / dir.x, 1.0f / dir.y, 1.0f / dir.z);
     uint3 tc = tc1;
 
     // delta tc is determined by the sign of the direction.
-    /*
-    const int3 dtc = make_int3(__float2int_rn(dir.x / fabs(dir.x)),
-                               __float2int_rn(dir.y / fabs(dir.y)),
-                               __float2int_rn(dir.z / fabs(dir.z)));
-    */
     const int3 dtc = make_int3((dir.x > 0) ? 1 : -1,
                                (dir.y > 0) ? 1 : -1,
                                (dir.z > 0) ? 1 : -1);
                                
     // the initial offsets of the planes closest to the point r in the
     // direction of dir.
-    float3 planes = make_float3(scale.x * (tc.x + (dtc.x + 1) / 2),
-                                scale.y * (tc.y + (dtc.y + 1) / 2),
-                                scale.z * (tc.z + (dtc.z + 1) / 2));
+    float3 planes = make_float3(scale.x * (tc.x + dtc.x * 0.5f + 0.5f),
+                                scale.y * (tc.y + dtc.y * 0.5f + 0.5f),
+                                scale.z * (tc.z + dtc.z * 0.5f + 0.5f));
+
     float prevAlpha = 0.0f;
     float sum = 0.0f;
 
@@ -373,7 +377,7 @@ __device__ float rad(uint3 tc1, float3 vec1, uint3 tc2, float3 vec2) {
         // since the signs are the same on both sides of the division.
         // (planes - r) can never be zero since we advance the plane
         // offset away from r.
-        float3 alphas = ( planes - vec1 ) / dir;
+        float3 alphas = ( planes - vec1 ) * invDir;
         // if dir is zero then the result will be infty or -infty.
         // this is a dirty hack to ensure that we only get positive infty.
         alphas = make_float3(fabs(alphas.x),

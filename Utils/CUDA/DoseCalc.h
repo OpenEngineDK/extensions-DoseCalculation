@@ -15,7 +15,7 @@ void SetupDoseCalc(float** cuDoseArr,
 void RunDoseCalc(float* cuDoseArr, 
                  Beam beam, 
                  int beamlet_x, int beamlet_y, 
-                 int kernel = 1);
+                 int kernel = 0);
 
 void Dose(float** out,
           Beam oebeam,
