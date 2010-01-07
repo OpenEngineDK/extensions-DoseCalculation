@@ -161,6 +161,10 @@ __device__ bool VoxelInsideBeamlet(float3 point, Matrix3x3 cone1, Matrix3x3 cone
         || cone2.mul(translatedPoint) >= 0;
 }
 
+/**
+ * Get the attenuation of the radiological depth for the voxel at
+ * textureCoord and traced back to coordinate.
+ */
 __device__ float GetRadiologicalDepth(const uint3 textureCoord, const float3 coordinate){
     // __constant__ uint3 dims
     // __constant__ float3 scale
@@ -241,17 +245,11 @@ __device__ float GetRadiologicalDepth(const uint3 textureCoord, const float3 coo
  * Summation of the weighted attenuation coefficients from the point r
  * back to the src point.
  */
-__device__ float sumAtt(float3 r, uint3 _tc) {
+__device__ float sumAtt(float3 r, uint3 tc) {
     float3 dir = beam.src - r ; 
     float l = length(dir) * PIXEL_UNIT;
-    int3 tc = make_int3(_tc.x, _tc.y, _tc.z);
     
     // delta tc is determined by the sign of the direction.
-    /*
-    const int3 dtc = make_int3(__float2int_rn(dir.x / fabs(dir.x)),
-                               __float2int_rn(dir.y / fabs(dir.y)),
-                               __float2int_rn(dir.z / fabs(dir.z)));
-    */
     const int3 dtc = make_int3((dir.x > 0) ? 1 : -1,
                                (dir.y > 0) ? 1 : -1,
                                (dir.z > 0) ? 1 : -1);
@@ -265,9 +263,14 @@ __device__ float sumAtt(float3 r, uint3 _tc) {
     float sum = 0.0f;
 
     // while we are still inside the voxel boundaries ... 
-    while (tc.x >= 0 && tc.x < dims.x &&
-           tc.y >= 0 && tc.y < dims.y &&
-           tc.z >= 0 && tc.z < dims.z) {
+
+    // Using major hack here, when the coord gets below 0 it will wrap
+    // around to max_uint and then be outside the texture (unless you
+    // use a huuuuuuuuuuuuuuuuuuuuu ... uuuuuuuuuuge texture, but
+    // c'mon!)
+    while (tc.x < dims.x &&
+           tc.y < dims.y &&
+           tc.z < dims.z) {
 
         // Determine the scaling factors. Result is always positive
         // since the signs are the same on both sides of the division.
@@ -282,14 +285,14 @@ __device__ float sumAtt(float3 r, uint3 _tc) {
         float alpha = fmin(alphas.x, alphas.y);
         alpha = fmin(alpha, alphas.z);
         
-        sum += attenuation(make_uint3(tc.x, tc.y, tc.z)) * (alpha - prevAlpha) * l;
+        sum += attenuationOpt(make_uint3(tc.x, tc.y, tc.z)) * (alpha - prevAlpha) * l;
         prevAlpha = alpha;
 
         // Find minimal coordinates. Note that several coordinates
         // could be minimal (equal).
-        int3 min = make_int3( (alphas.x == alpha) ? dtc.x : 0,
-                              (alphas.y == alpha) ? dtc.y : 0,
-                              (alphas.z == alpha) ? dtc.z : 0 );
+        uint3 min = make_uint3( (alphas.x == alpha) ? dtc.x : 0,
+                                (alphas.y == alpha) ? dtc.y : 0,
+                                (alphas.z == alpha) ? dtc.z : 0 );
         
         // advance the texture coordinates (termination is based on dot(min, min) != 0)
         tc += min;
