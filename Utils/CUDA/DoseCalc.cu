@@ -681,8 +681,7 @@ __host__ void Dose(float** out,                      // result dose map
 	// Report timing
 	cudaThreadSynchronize();
 	cutStopTimer(timer);  
-	double time = cutGetTimerValue( timer ); 
-	printf("time: %.4f ms.\n", time );
+	printf("time to calculate terma: %.4f ms.\n", cutGetTimerValue( timer ) );
 
     // terma<<< gridSize, blockSize >>>(0, _terma, _fmap);
 
@@ -723,6 +722,9 @@ __host__ void Dose(float** out,                      // result dose map
     //logger.info << "Running dose deposition kernel in " << iter << " iterations..." << logger.end; 
     offset = 0;
   
+    // start timer
+    cutResetTimer(timer);
+	cutStartTimer(timer);
     for (unsigned int i = 0; i < iter; ++i) {
         logger.info << "Dose deposition run #" << i << "/" << iter << logger.end;
         //logger.info << "offset = " << offset << logger.end;
@@ -730,6 +732,11 @@ __host__ void Dose(float** out,                      // result dose map
         CHECK_FOR_CUDA_ERROR();
         offset += blockSize.x * gridSize.x;
     }
+
+	// Report timing
+	cudaThreadSynchronize();
+	cutStopTimer(timer);  
+	printf("time to calculate deposition: %.4f ms.\n", cutGetTimerValue( timer ) );
 
     /*
     // print some dose values for debugging purposes.
