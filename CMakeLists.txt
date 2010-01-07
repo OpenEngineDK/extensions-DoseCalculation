@@ -7,6 +7,12 @@ CUDA_ADD_LIBRARY("CUDA_KERNELS"
 #  Utils/CUDA/Superposition.cu
 )
 
+TARGET_LINK_LIBRARIES("CUDA_KERNELS"
+  ${CUDA_CUT_LIBRARIES} #cutil
+)  
+
+MESSAGE( " cut: ${CUDA_CUT_LIBRARIES} ")#cutil
+
 # Create the extension library
 ADD_LIBRARY( ${EXTENSION_NAME}
   Renderers/OpenGL/DoseCalcSelectionRenderer.h
@@ -24,8 +30,6 @@ ADD_LIBRARY( ${EXTENSION_NAME}
   Utils/DoseTrigger.h
 )
 
-MESSAGE( " cut: ${CUDA_CUT_LIBRARIES} ")#cutil
-
 TARGET_LINK_LIBRARIES( ${EXTENSION_NAME}
   OpenEngine_Scene
   OpenEngine_Renderers
@@ -36,6 +40,5 @@ TARGET_LINK_LIBRARIES( ${EXTENSION_NAME}
   ${OPENGL_LIBRARY}
   ${GLEW_LIBRARIES}
   ${SDL_LIBRARY}
-  ${CUDA_CUT_LIBRARIES} #cutil
   "CUDA_KERNELS"
 )
