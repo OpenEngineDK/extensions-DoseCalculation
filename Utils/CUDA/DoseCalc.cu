@@ -139,6 +139,9 @@ __device__ float attenuation(uint3 r) {
 __device__ float attenuationOpt(uint3 r) {
     return tex3D(intensityTex, r.x, r.y, r.z) * 2 * MU_WATER;
 }
+__device__ float attenuationOpti(float r){
+    return r * 2 * MU_WATER;
+}
 
 /**
  * Get density relative to water.
@@ -269,6 +272,11 @@ __device__ float sumAtt(float3 r, uint3 tc) {
     float prevAlpha = 0.0f;
     float sum = 0.0f;
 
+    // Precalculated constants used in the alpha calculations.
+    float3 r2 = r * invDir;
+    float3 delta = planes * invDir;
+    float3 scale2 = scale * invDir;
+
     // while we are still inside the voxel boundaries ... 
 
     // Using major hack here, when the coord gets below 0 it will wrap
@@ -283,34 +291,37 @@ __device__ float sumAtt(float3 r, uint3 tc) {
         // since the signs are the same on both sides of the division.
         // (planes - r) can never be zero since we advance the plane
         // offset away from r.
-        float3 alphas = ( planes - r ) * invDir;
+        float3 alphas = delta - r2;
+
         // if dir is zero then the result will be infty or -infty.
         // this is a dirty hack to ensure that we only get positive infty.
         alphas = make_float3(fabs(alphas.x),
                              fabs(alphas.y),
                              fabs(alphas.z));
+
         float alpha = fmin(alphas.x, alphas.y);
         alpha = fmin(alpha, alphas.z);
         
-        sum += attenuationOpt(make_uint3(tc.x, tc.y, tc.z)) * (alpha - prevAlpha) * l;
+        //sum += attenuationOpt(make_uint3(tc.x, tc.y, tc.z)) * (alpha - prevAlpha);
+        sum += tex3D(intensityTex, tc.x, tc.y, tc.z) * (alpha - prevAlpha);
         prevAlpha = alpha;
 
         // Find minimal coordinates. Note that several coordinates
         // could be minimal (equal).
         uint3 min = make_uint3( (alphas.x == alpha) ? dtc.x : 0,
-                          (alphas.y == alpha) ? dtc.y : 0,
-                          (alphas.z == alpha) ? dtc.z : 0 );
+                                (alphas.y == alpha) ? dtc.y : 0,
+                                (alphas.z == alpha) ? dtc.z : 0 );
         
         // advance the texture coordinates (termination is based on dot(min, min) != 0)
         tc += min;
         
         // advance the planes.
-        planes = make_float3(planes.x + scale.x * min.x,
-                             planes.y + scale.y * min.y,
-                             planes.z + scale.z * min.z);
-        
+        delta = make_float3(delta.x + scale2.x * min.x,
+                            delta.y + scale2.y * min.y,
+                            delta.z + scale2.z * min.z);
     }
-    return sum;
+    return attenuationOpti(sum * l);
+    //return sum * l;
 }
 
 /**
@@ -325,7 +336,6 @@ __device__ float initFluence(float3 r) {
 __device__ float fluence(float3 r, uint3 tc) {
     float d = length(r - beam.src) * PIXEL_UNIT;
     return (initFluence(r)/(d*d)) * expf(-sumAtt(r, tc));
-    //return (initFluence(r)/(d*d)) * expf(-GetRadiologicalDepth(tc, r));
 }
 
 /**
@@ -343,7 +353,8 @@ __global__ void terma(uint offset, float* out, uchar* fmap) {
     const uint3 tc = idx_to_co(idx, dims);
     const float3 vec = texToVec(tc);
     out[idx] = VoxelInsideBeamlet(vec, beam.invCone1, beam.invCone2) ? 
-        ((attenuation(tc) / density(tc)) * fluence(vec, tc)) : 0.0f;
+        (attenuation(tc) / density(tc)) * fluence(vec, tc) : 0.0f;
+
     // out[idx] = (attenuation(tc) / density(tc)) * fluence(vec, tc)/(energy);
     // out[idx] = VoxelInsideBeamlet(vec, beam.invCone1, beam.invCone2) ? sumAtt(vec, tc) : 0.0f;
     // out[idx] = sumAtt(vec, tc);
@@ -352,7 +363,8 @@ __global__ void terma(uint offset, float* out, uchar* fmap) {
 __device__ float rad(uint3 tc1, float3 vec1, uint3 tc2, float3 vec2) {
     float3 dir = vec2 - vec1;
     float3 invDir = make_float3(1.0f / dir.x, 1.0f / dir.y, 1.0f / dir.z);
-    uint3 tc = tc1;
+    float l = length(dir);
+    uint3 tc = tc1;    
 
     // delta tc is determined by the sign of the direction.
     const int3 dtc = make_int3((dir.x > 0) ? 1 : -1,
@@ -377,16 +389,19 @@ __device__ float rad(uint3 tc1, float3 vec1, uint3 tc2, float3 vec2) {
         // since the signs are the same on both sides of the division.
         // (planes - r) can never be zero since we advance the plane
         // offset away from r.
-        float3 alphas = ( planes - vec1 ) * invDir;
+        //float3 alphas = delta - r2;
+        float3 alphas = (planes - vec1) * invDir;
+
         // if dir is zero then the result will be infty or -infty.
         // this is a dirty hack to ensure that we only get positive infty.
         alphas = make_float3(fabs(alphas.x),
                              fabs(alphas.y),
                              fabs(alphas.z));
+
         float alpha = fmin(alphas.x, alphas.y);
         alpha = fmin(alpha, alphas.z);
         
-        sum += density(tc) * length((alpha - prevAlpha) *  dir); 
+        sum += density(tc) * (alpha - prevAlpha);
         prevAlpha = alpha;
 
         uint3 min = make_uint3( (alphas.x == alpha) ? dtc.x : 0,
@@ -399,7 +414,7 @@ __device__ float rad(uint3 tc1, float3 vec1, uint3 tc2, float3 vec2) {
                              planes.z + scale.z * min.z);
         
     }
-    return sum + density(tc) * length((1 - prevAlpha) * dir);
+    return (sum + density(tc) * (1 - prevAlpha)) * l;
 
 }
 
@@ -425,7 +440,6 @@ __device__ float klookup(uint3 tcDst, int3 _tcSrc) {
         uint y = length(kaxis);
         uint x = length(kaxis - lookupVec);
         return (y <= 3 && x <= 7 && alpha >= 0) ? kern[y][x] * tex3D(termaTex, tcSrc.x, tcSrc.y, tcSrc.z) : 0.0f;
-        
     }
     return 0.0f;
 }
@@ -681,8 +695,8 @@ __host__ void Dose(float** out,                      // result dose map
 	cutStartTimer(timer);
 
     for (unsigned int i = 0; i < iter; ++i) {
-        logger.info << "TERMA run #" << i  << logger.end; 
-        logger.info << "offset = " << offset << logger.end;
+        logger.info << "TERMA run #" << i  << "/" << iter << logger.end; 
+        //logger.info << "offset = " << offset << logger.end;
         terma<<< gridSize, blockSize >>>(offset, _terma, _fmap);        
         CHECK_FOR_CUDA_ERROR();
         offset += blockSize.x * gridSize.x;
@@ -706,6 +720,7 @@ __host__ void Dose(float** out,                      // result dose map
     cudaMalloc3DArray(&tarr, &channelDesc, ext);
     CHECK_FOR_CUDA_ERROR();
     cudaMemcpy3DParms copyParams = {0};
+    //copyParams.srcPtr = make_cudaPitchedPtr((void*)test, 
     copyParams.srcPtr = make_cudaPitchedPtr((void*)test, 
                                             ext.width*sizeof(float),
                                             ext.width,
