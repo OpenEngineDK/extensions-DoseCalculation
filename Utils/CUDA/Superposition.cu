@@ -131,7 +131,7 @@ __device__ float sumAtt(float3 r, uint3 _tc) {
         // since the signs are the same on both sides of the division.
         // (planes - r) can never be zero since we advance the plane
         // offset away from r.
-        float3 alphas = ( planes - r ) / dir;
+        float3 alphas = (planes - r) / dir;
         // if dir is zero then the result will be infty or -infty.
         // this is a dirty hack to ensure that we only get positive infty.
         alphas = make_float3(fabs(alphas.x),

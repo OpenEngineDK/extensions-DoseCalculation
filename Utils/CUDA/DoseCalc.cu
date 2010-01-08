@@ -151,6 +151,13 @@ __device__ float density(uint3 r) {
     return (attenuation(r) / MU_WATER) * PIXEL_UNIT ;
 }
 
+__device__ float densityOpt(uint3 r){
+    return tex3D(intensityTex, r.x, r.y, r.z) * 2 * PIXEL_UNIT;
+}
+__device__ float densityOpti(float r){
+    return r * 2 * PIXEL_UNIT;
+}
+
 __device__ float3 GetWorldCoord(uint3 textureCoord){
     return make_float3(textureCoord.x * scale.x, 
                        textureCoord.y * scale.y, 
@@ -302,7 +309,6 @@ __device__ float sumAtt(float3 r, uint3 tc) {
         float alpha = fmin(alphas.x, alphas.y);
         alpha = fmin(alpha, alphas.z);
         
-        //sum += attenuationOpt(make_uint3(tc.x, tc.y, tc.z)) * (alpha - prevAlpha);
         sum += tex3D(intensityTex, tc.x, tc.y, tc.z) * (alpha - prevAlpha);
         prevAlpha = alpha;
 
@@ -321,7 +327,6 @@ __device__ float sumAtt(float3 r, uint3 tc) {
                             delta.z + scale2.z * min.z);
     }
     return attenuationOpti(sum * l);
-    //return sum * l;
 }
 
 /**
@@ -353,7 +358,8 @@ __global__ void terma(uint offset, float* out, uchar* fmap) {
     const uint3 tc = idx_to_co(idx, dims);
     const float3 vec = texToVec(tc);
     out[idx] = VoxelInsideBeamlet(vec, beam.invCone1, beam.invCone2) ? 
-        (attenuation(tc) / density(tc)) * fluence(vec, tc) : 0.0f;
+        //(attenuation(tc) / density(tc)) * fluence(vec, tc) : 0.0f;
+        (MU_WATER / PIXEL_UNIT) * fluence(vec, tc) : 0.0f;
 
     // out[idx] = (attenuation(tc) / density(tc)) * fluence(vec, tc)/(energy);
     // out[idx] = VoxelInsideBeamlet(vec, beam.invCone1, beam.invCone2) ? sumAtt(vec, tc) : 0.0f;
@@ -401,7 +407,8 @@ __device__ float rad(uint3 tc1, float3 vec1, uint3 tc2, float3 vec2) {
         float alpha = fmin(alphas.x, alphas.y);
         alpha = fmin(alpha, alphas.z);
         
-        sum += density(tc) * (alpha - prevAlpha);
+        //sum += densityOpt(tc) * (alpha - prevAlpha);
+        sum += tex3D(intensityTex, tc.x, tc.y, tc.z) * (alpha - prevAlpha);
         prevAlpha = alpha;
 
         uint3 min = make_uint3( (alphas.x == alpha) ? dtc.x : 0,
@@ -414,7 +421,8 @@ __device__ float rad(uint3 tc1, float3 vec1, uint3 tc2, float3 vec2) {
                              planes.z + scale.z * min.z);
         
     }
-    return (sum + density(tc) * (1 - prevAlpha)) * l;
+    //return (sum + densityOpt(tc) * (1 - prevAlpha)) * l;
+    return densityOpti(sum + tex3D(intensityTex, tc.x, tc.y, tc.z) * (1 - prevAlpha)) * l;
 
 }
 
@@ -720,7 +728,6 @@ __host__ void Dose(float** out,                      // result dose map
     cudaMalloc3DArray(&tarr, &channelDesc, ext);
     CHECK_FOR_CUDA_ERROR();
     cudaMemcpy3DParms copyParams = {0};
-    //copyParams.srcPtr = make_cudaPitchedPtr((void*)test, 
     copyParams.srcPtr = make_cudaPitchedPtr((void*)test, 
                                             ext.width*sizeof(float),
                                             ext.width,
