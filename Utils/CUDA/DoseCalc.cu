@@ -430,13 +430,11 @@ __device__ float project(float3 src, float3 onto) {
     return dot(src, onto) / dot(onto,onto);
 }
 
-__device__ float klookup(uint3 tcDst, int3 _tcSrc) {
-    if (_tcSrc.x >= 0 && _tcSrc.x < dims.x &&
-        _tcSrc.y >= 0 && _tcSrc.y < dims.y &&
-        _tcSrc.z >= 0 && _tcSrc.z < dims.z) {
+__device__ float klookup(uint3 tcDst, uint3 tcSrc) {
+    if (tcSrc.x < dims.x &&
+        tcSrc.y < dims.y &&
+        tcSrc.z < dims.z) {
         
-        uint3 tcSrc = make_uint3(_tcSrc.x, _tcSrc.y, _tcSrc.z);
-
         float3 vecDst = texToVec(tcDst);
         float3 vecSrc = texToVec(tcSrc);
 
@@ -478,9 +476,9 @@ __global__ void doseDeposition(uint offset, float* out) {
         for (int i = -halfsize; i <= halfsize; ++i) {
             for (int j = -halfsize; j <= halfsize; ++j) {
                 for (int k = -halfsize; k <= halfsize; ++k) {
-                    out[idx] += klookup(tc, make_int3(tc.x + i,
-                                                      tc.y + j,
-                                                      tc.z + k));
+                    out[idx] += klookup(tc, make_uint3(tc.x + i,
+                                                       tc.y + j,
+                                                       tc.z + k));
                 }
             }
         }
