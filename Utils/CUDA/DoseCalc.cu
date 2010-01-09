@@ -29,6 +29,7 @@ __constant__ uint3 dims;
 __constant__ uint2 beamletDims;
 __constant__ float2 invBeamletDims;
 __constant__ float3 scale;
+__constant__ float3 invScale;
 __constant__ CudaBeam beam;
 #ifdef _DOSE_DEVICE_BORDER
 __constant__ uint3 border;
@@ -84,6 +85,8 @@ void SetupDoseCalc(float** cuDoseArr,
     printf("Scale: %f,%f,%f\n", sw, sh, sd);
     scaling = make_float3(sw, sh, sd);
     cudaMemcpyToSymbol(scale, &scaling, sizeof(float3));
+    float3 invScaling = make_float3(1.0f / scale.x, 1.0f / scale.y, 1.0f / scale.z);
+    cudaMemcpyToSymbol(invScale, &invScaling, sizeof(float3));
     CHECK_FOR_CUDA_ERROR();
 
     cutCreateTimer( &timer);
@@ -106,7 +109,8 @@ __device__ float3 texToVec(uint3 tex) {
  * Determine the voxel coordinate containing the point vec.
  */
 __device__ uint3 vecToTex(float3 vec) {
-    return make_uint3(vec.x / scale.x, vec.y / scale.y, vec.z / scale.z);
+    //return make_uint3(vec.x / scale.x, vec.y / scale.y, vec.z / scale.z);
+    return make_uint3(vec * invScale);
 }
 
 // theoretical utility functions
@@ -395,7 +399,6 @@ __device__ float rad(uint3 tc1, float3 vec1, uint3 tc2, float3 vec2) {
         // since the signs are the same on both sides of the division.
         // (planes - r) can never be zero since we advance the plane
         // offset away from r.
-        //float3 alphas = delta - r2;
         float3 alphas = (planes - vec1) * invDir;
 
         // if dir is zero then the result will be infty or -infty.
@@ -407,7 +410,6 @@ __device__ float rad(uint3 tc1, float3 vec1, uint3 tc2, float3 vec2) {
         float alpha = fmin(alphas.x, alphas.y);
         alpha = fmin(alpha, alphas.z);
         
-        //sum += densityOpt(tc) * (alpha - prevAlpha);
         sum += tex3D(intensityTex, tc.x, tc.y, tc.z) * (alpha - prevAlpha);
         prevAlpha = alpha;
 
@@ -421,7 +423,6 @@ __device__ float rad(uint3 tc1, float3 vec1, uint3 tc2, float3 vec2) {
                              planes.z + scale.z * min.z);
         
     }
-    //return (sum + densityOpt(tc) * (1 - prevAlpha)) * l;
     return densityOpti(sum + tex3D(intensityTex, tc.x, tc.y, tc.z) * (1 - prevAlpha)) * l;
 
 }
