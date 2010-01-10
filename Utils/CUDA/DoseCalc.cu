@@ -266,6 +266,51 @@ __device__ float GetRadiologicalDepth(const uint3 textureCoord, const float3 coo
  */
 __device__ float sumAtt(float3 r, uint3 tc) {
     float3 dir = beam.src - r;
+    float dist = length(dir);
+
+    float3 delta = make_float3(dist / dir.x, dist / dir.y, dist / dir.z);
+
+    const int3 dtc = make_int3((dir.x > 0) ? 1 : -1,
+                               (dir.y > 0) ? 1 : -1,
+                               (dir.z > 0) ? 1 : -1);
+    
+    // Only half the delta since we're starting in the center of the voxel.
+    float3 alphas = make_float3(fabs(delta.x * 0.5f),
+                                fabs(delta.y * 0.5f),
+                                fabs(delta.z * 0.5f));
+    
+    float rd = 0.0f;
+
+    // while we are still inside the voxel boundaries ... 
+
+    // Using major hack here, when the coord gets below 0 it will wrap
+    // around to max_uint and then be outside the texture (unless you
+    // use a huuuuuuuuuuuuuuuuuuuuu ... uuuuuuuuuuge texture, but
+    // c'mon!)
+    while (tc.x < dims.x &&
+           tc.y < dims.y &&
+           tc.z < dims.z) {
+        float alpha = fmin(alphas.x, alphas.y);
+        alpha = fmin(alpha, alphas.z);
+        
+        rd += tex3D(intensityTex, tc.x, tc.y, tc.z) * alpha;
+        
+        alphas = alphas - alpha;
+
+        int3 inc = make_int3(alphas.x == 0.0f ? dtc.x : 0,
+                             alphas.y == 0.0f ? dtc.y : 0,
+                             alphas.z == 0.0f ? dtc.z : 0);
+
+        tc += make_uint3(inc.x, inc.y, inc.z);
+
+        // Inc and delta have the same sign so their product is always positive
+        alphas += make_float3(inc.x * delta.x,
+                              inc.y * delta.y,
+                              inc.z * delta.z);
+    }
+    return attenuationOpti(rd * PIXEL_UNIT);
+    /*
+    float3 dir = beam.src - r;
     float3 invDir = make_float3(1.0f / dir.x, 1.0f / dir.y, 1.0f / dir.z);
     float l = length(dir) * PIXEL_UNIT;
     
@@ -331,6 +376,7 @@ __device__ float sumAtt(float3 r, uint3 tc) {
                             delta.z + scale2.z * min.z);
     }
     return attenuationOpti(sum * l);
+    */
 }
 
 /**
