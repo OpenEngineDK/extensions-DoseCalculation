@@ -397,9 +397,10 @@ __device__ float fluence(float3 r, uint3 tc) {
  * Calculate Total Energy Released per unit MAss (TERMA) for each
  * voxel. This is the energy deposited by the incident fluence
  * e.g. the initial collision of photons. TERMA is determined by
- * incident fluence, linear attenuation, and
- * off-axis effects (intensity has an inverse square relation with the
- * angle to the beam axis (Jacques et. al. 2009).
+ * incident fluence, linear attenuation, and off-axis effects
+ * (intensity has a linear relation with the angle to the beam axis
+ * and an inverse square relation with the distance to the
+ * source. (Jacques et. al. 2009).
  */
 __global__ void terma(uint offset, float* out, uchar* fmap) {
     // const unsigned int idx = blockIdx.x*blockDim.x + threadIdx.x;
