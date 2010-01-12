@@ -162,7 +162,7 @@ __device__ float sumAtt(float3 r, uint3 _tc) {
         // (planes - r) can never be zero since we advance the plane
         // offset away from r.
 #ifdef OPTIMIZE_DIV
-        float3 alphas = (planes - r) / invDir;
+        float3 alphas = (planes - r) * invDir;
 #else
         float3 alphas = (planes - r) / dir;
 #endif
@@ -268,7 +268,7 @@ __device__ float rad(uint3 tc1, float3 vec1, uint3 tc2, float3 vec2) {
         // (planes - r) can never be zero since we advance the plane
         // offset away from r.
 #ifdef OPTIMIZE_DIV
-        float3 alphas = (planes - vec1) / invDir;
+        float3 alphas = (planes - vec1) * invDir;
 #else
         float3 alphas = (planes - vec1) / dir;
 #endif
