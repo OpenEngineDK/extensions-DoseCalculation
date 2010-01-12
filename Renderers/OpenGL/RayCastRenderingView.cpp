@@ -32,6 +32,7 @@ using namespace OpenEngine::Display;
                 isSetup = false;
                 minIntensity = 0.8;
                 maxIntensity = 1.0;
+                colorScale = 1.0;
             }
 
             void RayCastRenderingView::VisitDoseCalcNode(DoseCalcNode* node){
@@ -79,7 +80,7 @@ using namespace OpenEngine::Display;
                 */
                 
                 RenderToPBO(pbo,node->cuDoseArr,w,h,iva,pm(0,0),pm(1,1),
-                            minIntensity,maxIntensity, doSlice);
+                            minIntensity,maxIntensity, doSlice, colorScale);
 
                 glMatrixMode(GL_MODELVIEW);
                 glLoadIdentity();

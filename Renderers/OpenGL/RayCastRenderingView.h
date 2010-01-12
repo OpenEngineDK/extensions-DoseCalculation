@@ -28,6 +28,7 @@ namespace OpenGL {
         
         float minIntensity;
         float maxIntensity;
+        float colorScale;
 
         bool doSlice;
     public:
@@ -39,6 +40,10 @@ namespace OpenGL {
 
         float GetMaxIntensity() {return maxIntensity;}
         void SetMaxIntensity(float i) {maxIntensity = i;}
+
+        float GetColorScale() {return colorScale;}
+        void SetColorScale(float i) {colorScale = i;}
+
 
         // Rendering modes
         void DoThreshold();
@@ -61,6 +66,11 @@ namespace OpenGL {
                   SetMaxIntensity,
                   CONST, 0,
                   CONST, 1);
+    WIDGET_SLIDER("ColorScale",
+                  GetColorScale,
+                  SetColorScale,
+                  CONST,0,
+                  CONST,1);
     WIDGET_STOP();
 
 

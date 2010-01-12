@@ -152,7 +152,8 @@ __global__ void rayCasterSlice(uint *d_output, float* d_intense, uint imageW, ui
                           float minIt, float maxIt,
                           float transferOffset, float transferScale,
                           float pm00, float pm11,
-                          uint3 dims) {
+                               uint3 dims,
+                               float colorScale) {
     // ----- slice view ray caster code ...   -----
     float tStep = 1.0f;
     
@@ -183,7 +184,7 @@ __global__ void rayCasterSlice(uint *d_output, float* d_intense, uint imageW, ui
         col.x = col.y = col.z = sample;
         uint3 posi = make_uint3(floor(spos));
         int idx = co_to_idx(posi, dims);
-        col = colorblend(col, d_intense[idx]*maxIt);
+        col = colorblend(col, d_intense[idx]*colorScale);
         // col.y += d_intense[idx];
     }
     uint i = __umul24(y, imageW) + x;
@@ -194,7 +195,7 @@ __global__ void rayCaster(uint *d_output, float* d_intense, uint imageW, uint im
                           float minIt, float maxIt,
                           float transferOffset, float transferScale,
                           float pm00, float pm11,
-                          uint3 dims) {
+                          uint3 dims, float colorScale) {
     //__constant__ float3 scale;
     //__constant__ float3 boxMin;
     //__constant__ float3 boxMax;
@@ -240,7 +241,7 @@ __global__ void rayCaster(uint *d_output, float* d_intense, uint imageW, uint im
         int idx = co_to_idx(posi, dims);
         
         if (idx < dims.x * dims.y * dims.z) {
-            col = colorblend(col, d_intense[idx]);                   
+            col = colorblend(col, d_intense[idx]*colorScale);                   
         }
     }
 
@@ -249,7 +250,7 @@ __global__ void rayCaster(uint *d_output, float* d_intense, uint imageW, uint im
     
 }
 
-void RenderToPBO(int pbo, float* cuDoseArr, int width, int height, float* invMat, float pm00, float pm11, float minIt, float maxIt, bool doSlice) {
+void RenderToPBO(int pbo, float* cuDoseArr, int width, int height, float* invMat, float pm00, float pm11, float minIt, float maxIt, bool doSlice, float colorScale) {
     cudaMemcpyToSymbol(c_invViewMatrix, invMat, sizeof(float4)*4);
     CHECK_FOR_CUDA_ERROR();
 
@@ -269,10 +270,10 @@ void RenderToPBO(int pbo, float* cuDoseArr, int width, int height, float* invMat
     //printf("cast: %d,%d,%d\n",dimensions1.x,dimensions1.y,dimensions1.z);
     if (doSlice) {
         rayCasterSlice<<<gridSize, blockSize>>>(p,cuDoseArr,width,height,
-                                                minIt,maxIt,1,1,pm00,pm11,dimensions1);}
+                                                minIt,maxIt,1,1,pm00,pm11,dimensions1,colorScale);}
     else {
         rayCaster<<<gridSize, blockSize>>>(p,cuDoseArr,width,height,
-                                           minIt,maxIt,1,1,pm00,pm11,dimensions1);
+                                           minIt,maxIt,1,1,pm00,pm11,dimensions1,colorScale);
     }
     CHECK_FOR_CUDA_ERROR();
 
