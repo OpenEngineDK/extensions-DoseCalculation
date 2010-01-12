@@ -15,6 +15,7 @@
 
 texture<float, 3, cudaReadModeElementType> intensityTex;
 texture<float, 3, cudaReadModeElementType> termaTex;
+texture<float, 2, cudaReadModeElementType> dkernTex;
 
 typedef unsigned char uchar;
 typedef unsigned int uint;
@@ -37,9 +38,19 @@ __constant__ float kern[7][3] = { {.0001f, .0000f, .0000f},
                                   {.0179f, .0089f, .0007f},
                                   {.0047f, .0027f, .0007f},
                                   {.0009f, .0006f, .0004f} };
+
+__device__ float kern2[7][3] = { {.0001f, .0000f, .0000f}, 
+                                 {.3250f, .0110f, .0000f},
+                                 {.2340f, .0239f, .0004f},
+                                 {.0697f, .0190f, .0309f},
+                                 {.0179f, .0089f, .0007f},
+                                 {.0047f, .0027f, .0007f},
+                                 {.0009f, .0006f, .0004f} };
+
 __constant__ float kscale = 0.01f;
+__constant__ float kcellsize = 5.0f; //cm
 __constant__ float kdensity = 0.001f;
-__constant__ int halfsize;
+__constant__ int halfsize = 7;
 
 // utility functions
 
@@ -289,9 +300,13 @@ __device__ float klookup(uint3 tcDst, int3 _tcSrc) {
         float3 lookupVec = (vecDst - vecSrc) * rd;
         float alpha = project(lookupVec, kaxis);
         kaxis = alpha * kaxis;
-        uint y = length(kaxis);
-        uint x = length(kaxis - lookupVec);
-        return (y <= 3 && x <= 7 && alpha >= 0) ? kern[y][x] * tex3D(termaTex, tcSrc.x, tcSrc.y, tcSrc.z) : 0.0f;
+        float y = (alpha/fabs(alpha)) * (length(kaxis) / kcellsize);
+        float x = length(kaxis - lookupVec)/kcellsize + 0.5*kcellsize;
+        float3 diff = vecDst - vecSrc;  
+        float invdist = dot(diff,diff);
+        invdist = (invdist != 0) ? 1/(invdist*PIXEL_UNIT*PIXEL_UNIT) : 1; 
+        //return (y <= 3 && x <= 7 && alpha >= 0) ? kern[y][x] * invdist * tex3D(termaTex, tcSrc.x, tcSrc.y, tcSrc.z) : 0.0f;
+        return (y >= 0 && x >= 0 &&y <= 3 && x <= 7) ? tex2D(dkernTex, x, y) * tex3D(termaTex, tcSrc.x, tcSrc.y, tcSrc.z) * invdist: 0.0f;
         
     }
     return 0.0f;
@@ -490,11 +505,29 @@ __host__ void Dose(float** out,                      // result dose map
     cudaMemcpyToSymbol(beam, &_beam, sizeof(CudaBeam));
     CHECK_FOR_CUDA_ERROR();
     
-    int _halfsize = 4;
-    cudaMemcpyToSymbol(halfsize, &_halfsize, sizeof(int));
-    CHECK_FOR_CUDA_ERROR();
-    logger.info << "Kernel half size: " << _halfsize << logger.end; 
+    // int _halfsize = 7;
+    // cudaMemcpyToSymbol(halfsize, &_halfsize, sizeof(int));
+    // CHECK_FOR_CUDA_ERROR();
+    // logger.info << "Kernel half size: " << _halfsize << logger.end; 
    
+    // bind kernel array to texture
+    cudaArray* karr;
+    void* sym;
+    size_t kwidth = 3, kheight=7;
+
+    cudaGetSymbolAddress(&sym, kern2);
+    CHECK_FOR_CUDA_ERROR();
+    cudaMallocArray(&karr, &channelDesc, kwidth, kheight);
+    CHECK_FOR_CUDA_ERROR();
+    cudaMemcpyToArray(karr, 0, 0, sym, kwidth * kheight * sizeof(float), cudaMemcpyDeviceToDevice);
+    CHECK_FOR_CUDA_ERROR();
+    dkernTex.normalized = false;
+    dkernTex.filterMode = cudaFilterModeLinear;
+    dkernTex.addressMode[0] = cudaAddressModeClamp;
+    dkernTex.addressMode[1] = cudaAddressModeClamp;
+    dkernTex.addressMode[2] = cudaAddressModeClamp;
+    cudaBindTextureToArray(dkernTex, karr, channelDesc);
+    CHECK_FOR_CUDA_ERROR();
     // Run the dose deposition kernel
     logger.info << "Running dose deposition kernel in " << iter << " iterations..." << logger.end; 
     offset = 0;
