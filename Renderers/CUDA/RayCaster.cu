@@ -141,7 +141,9 @@ __device__ Ray RayForPoint(uint u, uint v, uint width, uint height,float pm00, f
 }
 
 __device__ float4 colorblend(float4 col, float i) {
-    float4 icol = make_float4(i, 0.0, col.x, 1.0);
+    float4 icol = col;
+    icol.y -= i;
+    icol.z -= i;
     // float4 icol = make_float4(i, i, i, 1.0);
     return icol;//col + 0.5 * icol; 
 }
@@ -230,13 +232,15 @@ __global__ void rayCaster(uint *d_output, float* d_intense, uint imageW, uint im
 
     if (hitVoxel){
         
-        col.x = sample;
-        
+        //col.x = sample;
+        col.x = col.y = col.z = sample;
+
+
         uint3 posi = make_uint3(floor(pos));
         int idx = co_to_idx(posi, dims);
         
         if (idx < dims.x * dims.y * dims.z) {
-            col.y = 0.2 * d_intense[idx];
+            col = colorblend(col, d_intense[idx]);                   
         }
     }
 
