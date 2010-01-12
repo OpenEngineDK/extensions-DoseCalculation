@@ -12,6 +12,8 @@
  
 #define PIXEL_UNIT 0.01 // one pixel = 1 cm^3
 
+#define OPTIMIZE_DIV
+//#define OPTIMIZE_IF
 
 texture<float, 3, cudaReadModeElementType> intensityTex;
 texture<float, 3, cudaReadModeElementType> termaTex;
@@ -146,6 +148,10 @@ __device__ float sumAtt(float3 r, uint3 _tc) {
     float prevAlpha = 0.0;
     float sum = 0.0;
 
+#ifdef OPTIMIZE_DIV
+    float3 invDir = make_float3(1.0f / dir.x, 1.0f / dir.y, 1.0f / dir.z) ;
+#endif
+
     // while we are still inside the voxel boundaries ... 
     while (tc.x >= 0 && tc.x < dims.x &&
            tc.y >= 0 && tc.y < dims.y &&
@@ -155,7 +161,11 @@ __device__ float sumAtt(float3 r, uint3 _tc) {
         // since the signs are the same on both sides of the division.
         // (planes - r) can never be zero since we advance the plane
         // offset away from r.
+#ifdef OPTIMIZE_DIV
+        float3 alphas = (planes - r) / invDir;
+#else
         float3 alphas = (planes - r) / dir;
+#endif
         // if dir is zero then the result will be infty or -infty.
         // this is a dirty hack to ensure that we only get positive infty.
         alphas = make_float3(fabs(alphas.x),
@@ -244,6 +254,10 @@ __device__ float rad(uint3 tc1, float3 vec1, uint3 tc2, float3 vec2) {
     float prevAlpha = 0.0;
     float sum = 0.0;
 
+#ifdef OPTIMIZE_DIV
+    float3 invDir = make_float3(1.0f / dir.x, 1.0f / dir.y, 1.0f / dir.z) ;
+#endif
+
     // while we are still inside the voxel boundaries ... 
     while (tc.x != tc2.x &&
            tc.y != tc2.y &&
@@ -253,7 +267,11 @@ __device__ float rad(uint3 tc1, float3 vec1, uint3 tc2, float3 vec2) {
         // since the signs are the same on both sides of the division.
         // (planes - r) can never be zero since we advance the plane
         // offset away from r.
-        float3 alphas = ( planes - vec1 ) / dir;
+#ifdef OPTIMIZE_DIV
+        float3 alphas = (planes - vec1) / invDir;
+#else
+        float3 alphas = (planes - vec1) / dir;
+#endif
         // if dir is zero then the result will be infty or -infty.
         // this is a dirty hack to ensure that we only get positive infty.
         alphas = make_float3(fabs(alphas.x),
