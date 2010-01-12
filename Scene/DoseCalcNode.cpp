@@ -69,6 +69,15 @@ namespace OpenEngine {
         void DoseCalcNode::CalculateDose(BeamNode* beam, int beamlet_x, int beamlet_y) {
             //RunDoseCalc(cuDoseArr, beam->GetBeam(1.0), beamlet_x, beamlet_y, 0);
             unsigned char fmap = 1;
+            // Dose(&cuDoseArr,                      // result dose map
+            //           beam->GetBeam(1.0),                      // beam
+            //           beam->GetBeam(12.0),                         // voxels of interest
+            //           &fmap,                      // fluence map
+            //           1, 1,           // # beamlets
+            //           width, height, depth,              // dimensions
+            //           scale[0], scale[1], scale[2]     // scale
+            //     );
+
             Dose(&cuDoseArr, 
                  beam->GetBeam(1.0), 
                  beam->GetBeam(12.0),
