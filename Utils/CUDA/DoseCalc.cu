@@ -250,8 +250,7 @@ __device__ float GetRadiologicalDepth(const uint3 textureCoord, const float3 coo
 
         // Add the radiological length for this step to the overall
         // depth.
-        //radiologicalDepth += advance * tex3D(intensityTex, texCoord[0], texCoord[1], texCoord[2]);
-        radiologicalDepth += advance * attenuation(make_uint3(texCoord[0], texCoord[1], texCoord[2]));
+        radiologicalDepth += advance * tex3D(intensityTex, texCoord[0], texCoord[1], texCoord[2]);
 
         // Advance the texture coordinates
         texCoord[minIndex] += texDelta[minIndex];
@@ -268,7 +267,7 @@ __device__ float sumAtt(float3 r, uint3 tc) {
     float3 dir = beam.src - r;
     float dist = length(dir);
 
-    float3 delta = make_float3(dist / dir.x, dist / dir.y, dist / dir.z);
+    float3 delta = make_float3(scale.x * dist / dir.x, scale.y * dist / dir.y, scale.z * dist / dir.z);
 
     const int3 dtc = make_int3((dir.x > 0) ? 1 : -1,
                                (dir.y > 0) ? 1 : -1,
@@ -294,7 +293,7 @@ __device__ float sumAtt(float3 r, uint3 tc) {
         alpha = fmin(alpha, alphas.z);
         
         rd += tex3D(intensityTex, tc.x, tc.y, tc.z) * alpha;
-        
+
         alphas = alphas - alpha;
 
         int3 inc = make_int3(alphas.x == 0.0f ? dtc.x : 0,
@@ -303,7 +302,7 @@ __device__ float sumAtt(float3 r, uint3 tc) {
 
         tc += make_uint3(inc.x, inc.y, inc.z);
 
-        // Inc and delta have the same sign so their product is always positive
+        // min and delta have the same sign so their product is always positive
         alphas += make_float3(inc.x * delta.x,
                               inc.y * delta.y,
                               inc.z * delta.z);
@@ -471,7 +470,6 @@ __device__ float rad(uint3 tc1, float3 vec1, uint3 tc2, float3 vec2) {
         
     }
     return densityOpti(sum + tex3D(intensityTex, tc.x, tc.y, tc.z) * (1 - prevAlpha)) * l;
-
 }
 
 __device__ float project(float3 src, float3 onto) {
