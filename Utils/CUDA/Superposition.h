@@ -7,6 +7,10 @@ typedef unsigned int uint;
 
 using OpenEngine::Scene::Beam;
 
+void SetupDoseCalc(float** cuDoseArr, 
+                   int w, int h, int d, 
+                   float sw, float sh, float sd);
+
 void Dose(float** out,
           Beam oebeam,
           Beam voi,

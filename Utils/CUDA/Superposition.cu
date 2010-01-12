@@ -43,6 +43,19 @@ __constant__ int halfsize;
 
 // utility functions
 
+void SetupDoseCalc(float** cuDoseArr, 
+                   int w, int h, int d, // dimensions
+                   float sw, float sh, float sd) // scale
+{ 
+    cudaMalloc((void**)cuDoseArr, sizeof(float)*w*h*d);
+    CHECK_FOR_CUDA_ERROR();
+
+    cudaMemset(*cuDoseArr, 0, sizeof(float)*w*h*d);
+
+    printf("SetupDoseCalc done\n");
+}
+
+
 /**
  * return the central position of a voxel.
  */
