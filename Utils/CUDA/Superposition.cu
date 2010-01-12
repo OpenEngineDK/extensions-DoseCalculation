@@ -9,7 +9,7 @@
 #include <stdlib.h>
 
 #include <Logging/Logger.h>
-
+ 
 #define PIXEL_UNIT 0.01 // one pixel = 1 cm^3
 
 
@@ -48,9 +48,9 @@ __device__ float kern2[7][3] = { {.0001f, .0000f, .0000f},
                                  {.0009f, .0006f, .0004f} };
 
 __constant__ float kscale = 0.01f;
-__constant__ float kcellsize = 5.0f; //cm
+__constant__ float kcellsize = 1.0f; //cm
 __constant__ float kdensity = 0.001f;
-__constant__ int halfsize = 7;
+__constant__ int halfsize = 4;
 
 // utility functions
 
@@ -304,7 +304,7 @@ __device__ float klookup(uint3 tcDst, int3 _tcSrc) {
         float x = length(kaxis - lookupVec)/kcellsize + 0.5*kcellsize;
         float3 diff = vecDst - vecSrc;  
         float invdist = dot(diff,diff);
-        invdist = (invdist != 0) ? 1/(invdist*PIXEL_UNIT*PIXEL_UNIT) : 1; 
+        invdist = (invdist != 0) ? 1/(invdist*PIXEL_UNIT) : 1; 
         //return (y <= 3 && x <= 7 && alpha >= 0) ? kern[y][x] * invdist * tex3D(termaTex, tcSrc.x, tcSrc.y, tcSrc.z) : 0.0f;
         return (y >= 0 && x >= 0 &&y <= 3 && x <= 7) ? tex2D(dkernTex, x, y) * tex3D(termaTex, tcSrc.x, tcSrc.y, tcSrc.z) * invdist: 0.0f;
         
