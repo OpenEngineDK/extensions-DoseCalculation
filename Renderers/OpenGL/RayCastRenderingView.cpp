@@ -20,11 +20,10 @@
 namespace OpenEngine {
     namespace Renderers {
         namespace OpenGL {
-
-using namespace OpenEngine::Scene;
-using namespace OpenEngine::Resources;
-using namespace OpenEngine::Display;
-
+            
+            using namespace OpenEngine::Scene;
+            using namespace OpenEngine::Resources;
+            using namespace OpenEngine::Display;
 
             RayCastRenderingView::RayCastRenderingView(Viewport& viewport) :
                 IRenderingView(viewport),
@@ -39,7 +38,7 @@ using namespace OpenEngine::Display;
                 Vector<4,int> d = GetViewport().GetDimension();
                 int w = d[2], h = d[3];
                 if (!isSetup) {
-                    ITexture3DPtr(float) tex = node->GetIntensityTex();
+                    Texture3DPtr(float) tex = node->GetIntensityTex();
                     // Make PBO
                     glGenBuffers(1,&pbo);
                     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pbo);
@@ -100,14 +99,16 @@ using namespace OpenEngine::Display;
                 glDrawPixels(w, h, GL_RGBA, GL_UNSIGNED_BYTE, 0);
                 glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
             }
+
+            void RayCastRenderingView::DoThreshold() {
+                doSlice = false;
+            }
+            
+            void RayCastRenderingView::DoSlice() {
+                doSlice = true;
+            }
+
         }
     }
 }
 
-void RayCastRenderingView::DoThreshold() {
-    doSlice = false;
-}
-
-void RayCastRenderingView::DoSlice() {
-    doSlice = true;
-}

@@ -57,7 +57,7 @@ public:
   , srcDist(200.0)
 {
     beamTrans->SetScale(Vector<3,float>(scale,srcDist,scale));
-    ITexture3DBasePtr tex = dnode->GetIntensityTex();
+    ITexture3DPtr tex = dnode->GetIntensityTex();
     Vector<3,float> scale = dnode->GetScale();
     pivot->SetPosition(Vector<3,float>(tex->GetWidth()*scale[0]*0.5, tex->GetHeight()*scale[1]*0.5, tex->GetDepth()*scale[2]*0.5));
     

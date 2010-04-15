@@ -47,7 +47,7 @@ namespace OpenEngine {
                 scale = Vector<3, float>();
                 xPlaneCoord = yPlaneCoord = zPlaneCoord = 0;
             }
-            doseTex = ITexture3DPtr(float)(new Texture3D<float>(width, height, depth, OE_RGB));
+            doseTex = Texture3DPtr(float)(new Texture3D<float>(width, height, depth, RGB));
             doseTex->Load();
 
             float* data = doseTex->GetData();

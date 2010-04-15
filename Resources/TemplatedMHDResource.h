@@ -11,7 +11,7 @@
 #ifndef _TEMPLATED_MHD_RESOURCE_H_
 #define _TEMPLATED_MHD_RESOURCE_H_
 
-#include <Resources/ITexture3D.h>
+#include <Resources/Texture3D.h>
 #include <Resources/IResourcePlugin.h>
 #include <Resources/Exceptions.h>
 #include <Resources/File.h>
@@ -34,7 +34,7 @@ namespace OpenEngine {
          *
          * @class TemplatedMHDResource TemplatedMHDResource.h Resources/TemplatedMHDResource.h
          */
-        template <class T> class TemplatedMHDResource : public ITexture3D<T> {
+        template <class T> class TemplatedMHDResource : public Texture3D<T> {
         private:
             string filename;            //!< file name
             float space_x, space_y, space_z;
@@ -44,12 +44,12 @@ namespace OpenEngine {
         public:
 
             explicit TemplatedMHDResource() 
-                : ITexture3D<T>() {
+                : Texture3D<T>() {
                 space_x = space_y = space_z = 0;
             };
 
             TemplatedMHDResource(string file)
-                : ITexture3D<T>() {
+                : Texture3D<T>() {
                 filename = file;
                 space_x = space_y = space_z = 0;
             }
@@ -109,14 +109,14 @@ namespace OpenEngine {
                 this->width /= scl;
                 this->height /= scl;
                 this->depth /= scl;
-                this->size = this->width * this->height * this->depth;
+                unsigned int size = this->width * this->height * this->depth;
                 
-                if (this->size == 0) 
+                if (size == 0) 
                     throw ResourceException("Dimensions missing.");
                 if (rawfile.empty()) 
                     throw ResourceException("Raw file missing.");
     
-                this->data = new float[this->size];
+                this->data = new float[size];
                 T* data = (T*) this->data;
                 short* s_data = new short[b_size];
                 FILE* pFile = fopen (rawfile.c_str(), "rb");
@@ -134,7 +134,7 @@ namespace OpenEngine {
                     }
                 }
                 delete[] s_data;
-                this->format = OE_LUMINANCE;
+                this->format = LUMINANCE;
             }
 
             void Unload(){
@@ -151,13 +151,6 @@ namespace OpenEngine {
 
             // Inherited virtual functions
             bool UseMipmapping() const { return false; }
-
-            template<class Archive>
-            void serialize(Archive& ar, const unsigned int version) {
-                ar & boost::serialization::base_object<ITextureResource>(*this);
-                ar & filename;
-            }
-
         };
 
 #define MHD(T) TemplatedMHDResource<T>
@@ -181,7 +174,5 @@ namespace OpenEngine {
 
     }
 }
-
-BOOST_CLASS_EXPORT(OpenEngine::Resources::TemplatedMHDResource<float>)
 
 #endif

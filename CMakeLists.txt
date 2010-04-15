@@ -36,7 +36,6 @@ TARGET_LINK_LIBRARIES( ${EXTENSION_NAME}
   OpenEngine_Resources
   Extensions_OpenGLRenderer
   Extensions_OpenGLSelection
-  Extensions_TemplatedTextures
   ${OPENGL_LIBRARY}
   ${GLEW_LIBRARIES}
   ${SDL_LIBRARY}

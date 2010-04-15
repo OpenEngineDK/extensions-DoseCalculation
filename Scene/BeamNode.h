@@ -23,6 +23,7 @@ public:
     // beam surface
     int beamlets_x, beamlets_y;
 public:
+    BeamNode() : beamlets_x(0), beamlets_y(0) { }
     BeamNode(int beamlets_x, int beamlets_y);
     virtual ~BeamNode();
 
@@ -31,12 +32,6 @@ public:
 private:
     Vector<3,float> ScaleVec(Vector<3,float> vec, Vector<3,float> scl);
 
-    friend class boost::serialization::access;
-    template<class Archive>
-    void serialize(Archive & ar, const unsigned int version) {
-        // serialize base class information
-        ar & boost::serialization::base_object<ISceneNode>(*this);
-    }
 };
         
 } // NS Scene
