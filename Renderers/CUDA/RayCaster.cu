@@ -113,7 +113,7 @@ int intersectBox(Ray r, float *tnear, float *tfar)
 	*tnear = largest_tmin;
 	*tfar = smallest_tmax;
 
-	return smallest_tmax > largest_tmin;
+	return 0.0f < largest_tmin && largest_tmin <smallest_tmax;
 }
 
 
